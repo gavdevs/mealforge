@@ -4,5 +4,5 @@ label = "MealForge"
 versionCode = 1
 versionName = "0.1.0"
 permissions = ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"]
-capabilities = []
+capabilities = ["cleartext-http"]
 serverPackage = "com.lightos"

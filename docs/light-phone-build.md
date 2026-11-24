@@ -1,10 +1,9 @@
 # Light Phone build (apps/light-phone)
 
-Experimental, owner-scoped Android/Kotlin client for the MealForge tRPC API. This
-document covers only the Gradle/Nx scaffold: the SDK pin, how the build resolves
-it, and the commands that prove the lane. Feature code, screens and the
-navigation stack are a later session per the repo's tests-before-implementation
-rule.
+Experimental, owner-scoped Android/Kotlin client for the MealForge tRPC API.
+This document records the pinned Gradle/Nx lane and tested native increments.
+The grocery tracer and active-plan read screen now exist; this is not full web
+parity. No Android runtime/device or visual acceptance is claimed.
 
 ## Lane: experimental/local, not distribution-compatible
 
@@ -162,7 +161,7 @@ passed, followed by `:app:assembleDebug` (unsigned).
 
 ## Deliberately not done
 
-- No MealForge feature code, screens, navigation or tRPC client.
+- Full plan/recipe/cook parity remains unfinished at the grocery checkpoint.
 - No `AndroidManifest.xml`, keystore or release signing.
 - No production server mutation, device install, push or release.
 - No changes to `apps/api`, `apps/web`, shared root config, or the SDK.
@@ -193,3 +192,35 @@ protocol tests. `pnpm exec biome check apps/light-phone/scripts/bootstrapSdkChec
 apps/light-phone/project.json` also passed. This checkpoint is codec + scaffold,
 not grocery UI or full parity. No SDK edits, signing, installation or production
 requests were used.
+
+## Continuation 2: native grocery tracer
+
+Separate test-only agents saved eight store behavior tests and six Kotlin
+HTTP integration tests before implementation. The initial native result was
+compile-RED (missing client/store symbols), not an executed assertion failure.
+The next build exposed `com.sun.net.httpserver` unavailable on Android's test
+compilation classpath. The test-only helper now uses standard `ServerSocket`;
+the behavior assertions were not changed or skipped.
+
+The real Ktor/OkHttp client now reads `plans.active` and grocery rows, performs
+absolute check/uncheck, adds optional quantity/section, and removes manual rows.
+The store waits for server-confirmed state, drops duplicate writes, rejects
+generated/checked-manual removal, discards stale results and cancels on stop.
+Failed writes reconcile with a read instead of automatically retrying a POST.
+Six integration tests launch the unchanged Hono/tRPC app over loopback HTTP
+with migrated in-memory SQLite and confirm mutations using subsequent reads.
+
+The SDK entry point now has explicit server trust/setup, native SDK navigation
+and text entry, active-plan read, sectioned groceries, manual-item form,
+bounded stale-labelled last-read cache, lifecycle cancellation and wheel scroll.
+`cleartext-http` is declared for explicitly configured local HTTP servers.
+These screens compiled; no phone/emulator was installed or visually exercised.
+
+```sh
+apps/light-phone/gradlew :app:testDebugUnitTest \
+  -DlightSdk.unsigned=true :app:assembleDebug --console=plain
+```
+
+With the documented JDK/SDK: **BUILD SUCCESSFUL**, 90 tasks (20 executed,
+70 up-to-date), **22 tests**: 8 codec + 8 store + 6 real HTTP/backend integration;
+zero failures/errors/skips. This is a tested tracer, not complete acceptance.

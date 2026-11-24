@@ -298,7 +298,7 @@ LightIcons.BACK, onClick = …))`, as the tool-manager example does) alongside t
 
 | Area | Constraint | Source |
 | --- | --- | --- |
-| App shape | One `@InitialScreen` + `@EntryPoint` object; screens extend `LightScreen<R,VM>` (or `SimpleLightScreen`) and are created by `navigateTo`; `@Composable Content()` is the UI | `sdk/client/.../LightScreen.kt`, `EntryPoint.kt`, `InitialScreen.kt`, `tool/.../HomeScreen.kt` |
+| App shape | One `@InitialScreen`; optional `@EntryPoint` object for tool hooks. Screens extend `LightScreen<R,VM>` or `SimpleLightScreen` and are created by `navigateTo`. The independent app compiled with only its initial screen. | `sdk/client/.../LightScreen.kt`, `EntryPoint.kt`, `InitialScreen.kt`; executed app build |
 | Navigation/back | SDK owns the back stack; system back → `LightActivity.goBack()`; `LightViewModel.onBackPressed(): Boolean` can consume; `goBack(result)` pops; popping destroys the screen and clears its `ViewModelStore` | `LightActivity.kt`, `LightScreen.kt`, `LightViewModel.kt` |
 | Lifecycle hooks | `willShow`/`willHide`/`onAppPause`/`onScreenDestroy`; **`onResume` calls `notifyWillShow` again**, `onPause` calls `notifyAppPause`. No background refresh hook; no destroy on pause | `LightActivity.kt:219-227`, `LightScreen.kt` |
 | Key events | Non-system keys go to the active screen first (`onKeyDown/Up/Multiple`); BACK/HOME are short-circuited and never reach the screen | `LightActivity.kt:153-195`, `examples/ui-demo/.../UiDemoKeyEventsScreen.kt` |
@@ -310,11 +310,11 @@ LightIcons.BACK, onClick = …))`, as the tool-manager example does) alongside t
 | App metadata | Declared in `lighttool.toml` only: `tool.id` (dotted lowercase), `label` ≤50, `versionName` semver, `versionCode`, `permissions`, `capabilities`, `serverPackage` (must be `com.lightos` on device); manifest is generated, a hand-written `AndroidManifest.xml` is a build error; no Java sources | `plugin/.../LightToolMetadata.kt`, `ManifestGenerator.kt`, `LightSdkPlugin.kt` |
 | Build toolchain | `compileSdk 36`, `minSdk 34`, `targetSdk 34`, `jvmTarget 17`; AGP 8.12.3, Kotlin 2.3.20; consumer module must apply `com.android.application` + `com.thelightphone.light-sdk` and be named outside the SDK’s module set | root `build.gradle.kts`, `gradle/libs.versions.toml`, `LightSdkPlugin.kt` |
 
-Pinned-dependency note (no execution claim): the SDK modules are `group=com.thelightphone`, `version=0.2.3`, and
-`settings.gradle.kts`/`plugin` assume a single Gradle build (`project(":sdk:client")`, `includeBuild("plugin")`).
-A separate `apps/light-phone` build therefore needs either an included build with dependency substitution for
-`com.thelightphone:sdk-client/sdk-ui/sdk-shared` or published `0.2.3` artifacts plus the included plugin build. That
-integration is scaffold work (not re-verified here); it must not be described as working until executed.
+Pinned dependency integration is now executed: `apps/light-phone/settings.gradle.kts`
+maps SDK project directories into the independent build and includes the pinned plugin.
+The wrapper provisions/verifies the exact clean SDK before Gradle. No published-artifact
+substitution or SDK edit is used. Protocol tests, unsigned APK assembly, and the actual
+Nx `test`/`build` wrappers (including `prep` dependencies) passed; see `light-phone-build.md`.
 
 ## 8. First grocery tracer bullet — contract data for the port’s tests
 
@@ -405,8 +405,8 @@ results supersede “not executed” for the cases they cover. Still **open** (s
 | B6 | Rotary/wheel interaction is unverified; key codes come from `light-keyboard` v0.0.19, and no SDK component automatically scrolls on them. | Implement and test supported key-event handling with bounds and back navigation; verify on the target surface when authorized. Touch-only scrolling is not an approved substitute for the requested wheel interaction. |
 | B7 | Markdown-free long-text rendering and text entry practicality on a 1080×1240 device are unverified. `LightTextInputEditor` is full-screen with an embedded keyboard and a server round-trip for options. | Verify on emulator during implementation; design grocery/name entry as one field per screen, not a web-style inline row. |
 | B8 | `addManualItem`’s `Date.now()` normalized key can collide for two adds in the same millisecond (unique index → 500). | Implement the per-row in-flight guard (already required) and treat the collision 500 as a generic failure with refetch. |
-| B9 | Pinned-SDK build integration (included build + dependency substitution vs published `0.2.3`) is unproven; the SDK settings file assumes its own root build. | Scaffold owner must execute it; this document does not claim it works. |
-| B10 | `apps/light-phone` under the pnpm `apps/*` glob and Nx has no `package.json`/`project.json`, so neither tool will build it and Nx autodiscovery must not be assumed. | Add minimal Nx wrapper targets only if useful; never treat `apps/*` membership as Android support. |
+| B9 | Independent pinned-SDK integration is verified for the scaffold/codec checkpoint. | Project-directory mapping plus included plugin built successfully without SDK edits; later feature compatibility must still be tested. |
+| B10 | Actual Nx `light-phone:test` and `light-phone:build`, each depending on `prep`, executed successfully. | Explicit `project.json` wrappers, not `apps/*` membership, provide build integration. |
 
 ### 9.1 Open source questions (deliberately not expanded)
 
