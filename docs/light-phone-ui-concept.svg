@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1840" height="760" viewBox="0 0 1840 760" role="img" aria-labelledby="title desc">
+  <title id="title">MealForge Light Phone III interface concept</title>
+  <desc id="desc">Four monochrome Light Phone screens: an active meal plan, grocery checklist with manual entry, recipe details with Start cooking, and a recipe cook step with previous and next navigation. Concept only, using sample data.</desc>
+  <defs>
+    <style>
+      .primary { fill: #FFFFFF; font-family: Akkurat, Arial, sans-serif; }
+      .secondary { fill: #BBBBBB; font-family: Akkurat, Arial, sans-serif; }
+      .mono { font-family: monospace; }
+      .screen { fill: #000000; stroke: #BBBBBB; stroke-width: 1; }
+      .rule { stroke: #BBBBBB; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect width="1840" height="760" fill="#000000"/>
+
+  <text x="72" y="72" class="primary" font-size="42" letter-spacing="0.2">MealForge</text>
+  <text x="72" y="106" class="secondary mono" font-size="16">LIGHT PHONE III · NATIVE KOTLIN / LIGHTSDK CONCEPT</text>
+  <text x="1768" y="73" text-anchor="end" class="secondary mono" font-size="14">SAMPLE DATA · NOT A SCREENSHOT</text>
+  <line x1="72" y1="132" x2="1768" y2="132" class="rule"/>
+
+  <!-- Active plan: actions and favorites remain explicit, without web cards. -->
+  <g id="plans">
+    <rect x="72" y="168" width="352" height="404" class="screen"/>
+    <text x="92" y="207" class="primary" font-size="24">Meal plan</text>
+    <text x="404" y="207" text-anchor="end" class="primary" font-size="22">☆</text>
+    <text x="92" y="235" class="secondary mono" font-size="12">WEEKLY ROTATION · ACTIVE</text>
+    <line x1="92" y1="254" x2="404" y2="254" class="rule"/>
+    <rect x="92" y="273" width="3" height="52" fill="#FFFFFF"/>
+    <text x="110" y="294" class="primary" font-size="18">Mon · Lemon chicken</text>
+    <text x="110" y="316" class="secondary mono" font-size="11">DINNER · 25 MIN</text>
+    <text x="400" y="284" text-anchor="end" class="secondary" font-size="15">Not cooked</text>
+    <line x1="92" y1="340" x2="404" y2="340" class="rule"/>
+    <text x="102" y="370" class="primary" font-size="18">Tue · Bean bowls</text>
+    <text x="102" y="392" class="secondary mono" font-size="11">DINNER · 15 MIN</text>
+    <text x="400" y="370" text-anchor="end" class="secondary" font-size="18">Done ✓</text>
+    <line x1="92" y1="417" x2="404" y2="417" class="rule"/>
+    <text x="102" y="445" class="primary" font-size="18">Wed · Stir-fried tofu</text>
+    <text x="102" y="467" class="secondary mono" font-size="11">DINNER · 20 MIN</text>
+    <line x1="92" y1="498" x2="404" y2="498" class="rule"/>
+    <text x="92" y="532" class="secondary mono" font-size="12">SCROLL FOR MEALS</text>
+    <text x="404" y="532" text-anchor="end" class="primary" font-size="17">Open ›</text>
+  </g>
+
+  <!-- Grocery group, check-off and manual entry. -->
+  <g id="groceries">
+    <rect x="520" y="168" width="352" height="404" class="screen"/>
+    <text x="540" y="207" class="primary" font-size="24">Groceries</text>
+    <text x="852" y="207" text-anchor="end" class="secondary mono" font-size="11">1 OF 3</text>
+    <line x1="540" y1="226" x2="852" y2="226" class="rule"/>
+    <text x="540" y="254" class="secondary mono" font-size="12">PRODUCE</text>
+    <text x="540" y="284" class="primary mono" font-size="17">[x]</text>
+    <text x="584" y="284" class="primary" font-size="19">Spinach</text>
+    <text x="852" y="284" text-anchor="end" class="secondary" font-size="16">200 g</text>
+    <text x="540" y="327" class="primary mono" font-size="17">[ ]</text>
+    <text x="584" y="327" class="primary" font-size="19">Avocados</text>
+    <text x="852" y="327" text-anchor="end" class="secondary" font-size="16">2</text>
+    <text x="540" y="370" class="primary mono" font-size="17">[x]</text>
+    <text x="584" y="370" class="primary" font-size="19">Lemons</text>
+    <text x="852" y="370" text-anchor="end" class="secondary" font-size="16">4</text>
+    <line x1="540" y1="396" x2="852" y2="396" class="rule"/>
+    <text x="540" y="422" class="secondary mono" font-size="12">DAIRY</text>
+    <text x="540" y="452" class="primary mono" font-size="17">[ ]</text>
+    <text x="584" y="452" class="primary" font-size="19">Greek yogurt</text>
+    <text x="852" y="452" text-anchor="end" class="secondary" font-size="16">1 tub</text>
+    <line x1="540" y1="482" x2="852" y2="482" class="rule"/>
+    <text x="696" y="522" text-anchor="middle" class="primary" font-size="19">+ Add grocery item</text>
+    <text x="696" y="550" text-anchor="middle" class="secondary mono" font-size="11">NAME · QTY · SECTION</text>
+  </g>
+
+  <!-- Recipe detail retains metadata/ingredients and a plain cook action. -->
+  <g id="recipe">
+    <rect x="968" y="168" width="352" height="404" class="screen"/>
+    <text x="988" y="207" class="primary" font-size="24">Lemon chicken</text>
+    <text x="1300" y="207" text-anchor="end" class="primary" font-size="22">☆</text>
+    <text x="988" y="235" class="secondary mono" font-size="11">SERVES 4 · PREP 10M · COOK 25M</text>
+    <line x1="988" y1="251" x2="1300" y2="251" class="rule"/>
+    <text x="988" y="279" class="primary" font-size="16">Bright, herby roast chicken.</text>
+    <text x="988" y="314" class="secondary mono" font-size="12">INGREDIENTS · PRODUCE</text>
+    <text x="988" y="342" class="primary" font-size="18">Lemon</text>
+    <text x="1300" y="342" text-anchor="end" class="secondary" font-size="16">2</text>
+    <text x="988" y="370" class="primary" font-size="18">Parsley</text>
+    <text x="1300" y="370" text-anchor="end" class="secondary" font-size="16">1 bunch</text>
+    <text x="988" y="406" class="secondary mono" font-size="12">INGREDIENTS · MEAT</text>
+    <text x="988" y="434" class="primary" font-size="18">Chicken thighs</text>
+    <text x="1300" y="434" text-anchor="end" class="secondary" font-size="16">600 g</text>
+    <line x1="988" y1="461" x2="1300" y2="461" class="rule"/>
+    <text x="988" y="494" class="secondary mono" font-size="12">SCROLL FOR ALL STEPS</text>
+    <text x="988" y="537" class="primary" font-size="20">Start cooking ›</text>
+  </g>
+
+  <!-- Existing cook mode is an ordered step view, not a new cooking backend. -->
+  <g id="cook-mode">
+    <rect x="1416" y="168" width="352" height="404" class="screen"/>
+    <text x="1436" y="207" class="primary" font-size="24">Cook mode</text>
+    <text x="1748" y="207" text-anchor="end" class="secondary mono" font-size="12">2 / 6</text>
+    <text x="1436" y="237" class="secondary" font-size="17">Lemon chicken</text>
+    <line x1="1436" y1="258" x2="1748" y2="258" class="rule"/>
+    <text x="1436" y="309" class="primary" font-size="23">Season the chicken</text>
+    <text x="1436" y="348" class="primary" font-size="23">with salt and herbs.</text>
+    <text x="1436" y="387" class="primary" font-size="23">Cook for six minutes</text>
+    <text x="1436" y="426" class="primary" font-size="23">on each side.</text>
+    <line x1="1436" y1="459" x2="1748" y2="459" class="rule"/>
+    <text x="1436" y="487" class="secondary mono" font-size="11">WHEEL: CHANGE STEP</text>
+    <text x="1436" y="537" class="secondary" font-size="17">‹ Previous</text>
+    <text x="1748" y="537" text-anchor="end" class="primary" font-size="19">Next step ›</text>
+  </g>
+
+  <text x="248" y="616" text-anchor="middle" class="secondary mono" font-size="13">PLAN</text>
+  <text x="696" y="616" text-anchor="middle" class="secondary mono" font-size="13">SHOP</text>
+  <text x="1144" y="616" text-anchor="middle" class="secondary mono" font-size="13">READ</text>
+  <text x="1592" y="616" text-anchor="middle" class="secondary mono" font-size="13">COOK</text>
+  <text x="248" y="641" text-anchor="middle" class="secondary" font-size="15">Meals · favorite · complete</text>
+  <text x="696" y="641" text-anchor="middle" class="secondary" font-size="15">Sections · add · check off</text>
+  <text x="1144" y="641" text-anchor="middle" class="secondary" font-size="15">Ingredients · favorite · cook</text>
+  <text x="1592" y="641" text-anchor="middle" class="secondary" font-size="15">Step-by-step · enter / leave</text>
+  <line x1="72" y1="674" x2="1768" y2="674" class="rule"/>
+  <text x="72" y="710" class="secondary" font-size="14">Concept only. All recipes, quantities and states are sample data. No application code is shown.</text>
+  <text x="1768" y="710" text-anchor="end" class="secondary mono" font-size="12">BLACK · WHITE · SECONDARY GRAY</text>
+</svg>
