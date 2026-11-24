@@ -1,16 +1,37 @@
 package com.mealforge.lightphone
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.ui.LightText
+import com.thelightphone.sdk.ui.LightTextField
 import com.thelightphone.sdk.ui.LightTextVariant
+import com.thelightphone.sdk.ui.gridUnitsAsDp
+import com.thelightphone.sdk.ui.lightClickable
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -26,28 +47,36 @@ internal val STORE_SECTIONS = linkedMapOf(
 )
 private val GROCERY_CACHE = stringPreferencesKey("mealforge_last_groceries")
 private const val MAX_CACHE_CHARS = 64_000
+private data class GroceryDraft(
+    val name: String = "", val section: String = "other", val planId: Int? = null,
+    val interrupted: Boolean = false,
+)
 
-class GroceryScreen(activity: SealedLightActivity, private val serverUrl: String) : NativeScreen<Unit>(activity) {
+internal class GroceryPanel(
+    private val serverUrl: String, private val scope: CoroutineScope,
+    private val dataStore: DataStore<Preferences>, private val editText: EditNativeText,
+) : MealforgePanel {
     private val grocery = MutableStateFlow(GroceryState(loading = true))
+    private val draft = MutableStateFlow(GroceryDraft())
+    private val sectionOpen = MutableStateFlow(false)
     private val cacheNotice = MutableStateFlow<String?>(null)
-    private val lastRead = MutableStateFlow(0L)
+    private var savedAt = 0L
     private var module: AppModule? = null
     private var observer: Job? = null
     private val json = Json { ignoreUnknownKeys = true }
 
-    override fun willShow() {
+    override fun show() {
         if (observer?.isActive == true) return
         observer = scope.launch {
             try {
                 if (module == null) {
-                    val encoded = lightContext.dataStore.data.first()[GROCERY_CACHE]
+                    val encoded = dataStore.data.first()[GROCERY_CACHE]
                     val cached = if (encoded != null && encoded.length <= MAX_CACHE_CHARS) {
-                        // Malformed last-read data is discarded, never used as a write source.
                         runCatching { json.decodeFromString<CachedGroceries>(encoded) }.getOrNull()
                             ?.takeIf { it.serverUrl == serverUrl }
                     } else null
                     module = AppModule(serverUrl, scope, cached)
-                    lastRead.value = cached?.savedAt ?: 0
+                    savedAt = cached?.savedAt ?: 0
                 }
                 val store = module!!.groceries
                 store.refresh()
@@ -56,181 +85,153 @@ class GroceryScreen(activity: SealedLightActivity, private val serverUrl: String
                     if (!current.loading && !current.isStale && current.error == null &&
                         !current.adding && current.pendingItemIds.isEmpty()) {
                         val at = System.currentTimeMillis()
-                        lastRead.value = at
                         val encoded = json.encodeToString(CachedGroceries(serverUrl, at, current.plan, current.items))
                         try {
-                            lightContext.dataStore.edit { preferences ->
-                                if (encoded.length <= MAX_CACHE_CHARS) preferences[GROCERY_CACHE] = encoded
-                                else preferences.remove(GROCERY_CACHE)
+                            dataStore.edit {
+                                if (encoded.length <= MAX_CACHE_CHARS) it[GROCERY_CACHE] = encoded
+                                else it.remove(GROCERY_CACHE)
                             }
+                            savedAt = at
                             cacheNotice.value = null
-                        } catch (cancelled: CancellationException) {
-                            throw cancelled
-                        } catch (_: Exception) {
-                            cacheNotice.value = "Last read could not be saved on this device."
-                        }
+                        } catch (cancelled: CancellationException) { throw cancelled
+                        } catch (_: Exception) { cacheNotice.value = "Last read could not be saved on this device." }
                     }
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
+            } catch (cancelled: CancellationException) { throw cancelled
             } catch (error: Exception) {
-                grocery.value = grocery.value.copy(loading = false, error = error.message ?: "Could not open groceries.")
+                grocery.value = grocery.value.copy(loading = false, isStale = true,
+                    error = error.message ?: "Could not open groceries.")
             }
         }
     }
 
-    override fun willHide() {
+    override fun hide() {
+        if (module?.groceries?.state?.value?.adding == true) draft.value = draft.value.copy(interrupted = true)
         module?.groceries?.stop()
-        super.willHide()
+        observer?.cancel()
     }
+    fun close() { hide(); module?.close() }
 
-    override fun onScreenDestroy() {
-        module?.close()
-        super.onScreenDestroy()
+    private fun add() {
+        val store = module?.groceries ?: return
+        val current = store.state.value
+        val values = draft.value
+        if (current.loading || current.isStale || values.interrupted || values.planId != current.plan?.planId) return
+        val job = store.addManualItem(values.name, null, values.section) ?: return
+        scope.launch {
+            job.join()
+            if (!job.isCancelled && store.state.value.error == null && !store.state.value.isStale) {
+                draft.value = draft.value.copy(name = "", interrupted = false)
+            }
+        }
     }
 
     @Composable
     override fun Content() {
         val current by grocery.collectAsState()
-        val savedAt by lastRead.collectAsState()
+        val values by draft.collectAsState()
+        val selecting by sectionOpen.collectAsState()
         val cacheError by cacheNotice.collectAsState()
         val openSections = remember(current.items) {
             val open = current.items.filterNot { it.checked }.groupBy { it.section }
-            (STORE_SECTIONS.keys + open.keys).distinct().mapNotNull { section ->
-                open[section]?.let { section to it }
-            }
+            (STORE_SECTIONS.keys + open.keys).distinct().mapNotNull { section -> open[section]?.let { section to it } }
         }
         val checked = remember(current.items) { current.items.filter { it.checked } }
         val writable = !current.loading && !current.isStale && current.plan != null
-        Page("Groceries") {
-            current.plan?.let { plan ->
-                LightText(plan.displayName, LightTextVariant.Subtitle)
-                Detail("${checked.size} / ${current.items.size} in the cart")
-            }
-            if (current.loading) Detail("Loading the list…")
-            if (current.isStale) Detail("STALE — last-read data; changes disabled until refresh succeeds.")
-            if (savedAt > 0) Detail("Last confirmed: ${Instant.ofEpochMilli(savedAt)}")
-            current.error?.let { Detail(it) }
-            cacheError?.let { Detail(it) }
-            if (!current.loading && current.plan == null && current.error == null) {
-                Detail("No active meal plan. Activate a plan to get its grocery list.")
-            }
+        if (current.loading) BodyText("Loading the list...", true)
+        if (current.isStale) {
+            BodyText("Last read only. Changes disabled until refresh succeeds.", true)
+            if (savedAt > 0) BodyText("Last confirmed ${Instant.ofEpochMilli(savedAt)}", true)
+        }
+        current.error?.let { BodyText(it) }
+        cacheError?.let { BodyText(it, true) }
+        val plan = current.plan
+        if (!current.loading && plan == null && current.error == null) {
+            SectionHeading("No list yet")
+            BodyText("The grocery list builds itself from the active meal plan. Set a plan active or push one from chat.", true)
+        }
+        if (plan != null) {
+            BodyText("${plan.displayName} • ${checked.size}/${current.items.size} in the cart", true)
             openSections.forEach { (section, items) ->
-                LightText(STORE_SECTIONS[section] ?: section, LightTextVariant.Subheading)
+                SectionHeading(STORE_SECTIONS[section] ?: section)
                 items.forEach { item ->
-                    val pending = item.id in current.pendingItemIds
-                    Choice("[ ] ${item.name}", writable && !pending) {
-                        module?.groceries?.setChecked(item.id, true)
+                    GroceryRow(item, writable && item.id !in current.pendingItemIds,
+                        item.id in current.pendingItemIds,
+                        onToggle = { module?.groceries?.setChecked(item.id, true) },
+                        onRemove = if (item.isManual) ({ module?.groceries?.removeManualItem(item.id); Unit }) else null)
+                }
+            }
+            if (current.items.isNotEmpty() && checked.size == current.items.size) {
+                BodyText("Everything's in the cart. Go home and cook.")
+            }
+            SectionHeading("Add an item")
+            LightTextField("Add a grocery item", values.name, "Item name",
+                onClick = {
+                    if (!current.adding) editText("Item name", values.name) {
+                        draft.value = draft.value.copy(name = it, planId = plan.planId)
                     }
-                    if (item.quantityText.isNotEmpty()) Detail(item.quantityText)
-                    if (pending) Detail("Saving…")
-                    if (item.isManual) {
-                        Choice("Remove added item", writable && !pending) {
-                            module?.groceries?.removeManualItem(item.id)
-                        }
+                })
+            ActionButton("Section: ${STORE_SECTIONS[values.section] ?: values.section}", !current.adding) {
+                sectionOpen.value = !sectionOpen.value
+            }
+            if (selecting) FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(0.3f.gridUnitsAsDp()),
+                verticalArrangement = Arrangement.spacedBy(0.3f.gridUnitsAsDp()),
+            ) {
+                STORE_SECTIONS.forEach { (key, label) ->
+                    ActionButton(label, !current.adding, selected = values.section == key) {
+                        draft.value = draft.value.copy(section = key)
+                        sectionOpen.value = false
                     }
                 }
             }
+            val changedPlan = values.name.isNotBlank() && values.planId != plan.planId
+            if (values.interrupted || changedPlan) {
+                BodyText(if (values.interrupted) "Save interrupted. It may have reached the server. Check the refreshed list before adding again."
+                    else "The active plan changed. Review the refreshed list before entering an item.")
+                ActionButton("Clear entry", !current.adding) { draft.value = GroceryDraft(section = values.section, planId = plan.planId) }
+            }
+            ActionButton(if (current.adding) "Adding..." else "Add item",
+                writable && !current.adding && !values.interrupted && !changedPlan && values.name.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()) { add() }
             if (checked.isNotEmpty()) {
-                LightText("In the cart", LightTextVariant.Subheading)
+                SectionHeading("In the cart")
                 checked.forEach { item ->
-                    Choice("[x] ${item.name}", writable && item.id !in current.pendingItemIds) {
-                        module?.groceries?.setChecked(item.id, false)
-                    }
-                    if (item.quantityText.isNotEmpty()) Detail(item.quantityText)
+                    GroceryRow(item, writable && item.id !in current.pendingItemIds,
+                        item.id in current.pendingItemIds,
+                        onToggle = { module?.groceries?.setChecked(item.id, false) })
                 }
             }
-            if (current.items.isNotEmpty() && checked.size == current.items.size) Detail("Everything's in the cart.")
-            current.plan?.let { plan ->
-                Choice("+ Add grocery item", writable && !current.adding) {
-                    navigateTo({ ManualGroceryScreen(it, serverUrl, plan.planId) })
-                }
-            }
-            Choice("Refresh", !current.loading && current.pendingItemIds.isEmpty() && !current.adding) {
-                if (module == null) willShow() else module?.groceries?.refresh()
-            }
+        }
+        ActionButton("Refresh", !current.loading && current.pendingItemIds.isEmpty() && !current.adding) {
+            if (module == null) show() else module?.groceries?.refresh()
         }
     }
 }
 
-private data class ManualDraft(val name: String = "", val quantity: String = "", val section: String? = null)
-
-internal class ManualGroceryScreen(
-    activity: SealedLightActivity,
-    serverUrl: String,
-    private val expectedPlanId: Int,
-) : NativeScreen<Unit>(activity) {
-    private val module = AppModule(serverUrl, scope)
-    private val current = MutableStateFlow(GroceryState(loading = true))
-    private val draft = MutableStateFlow(ManualDraft())
-    private val notice = MutableStateFlow<String?>(null)
-    private var observer: Job? = null
-    private var interruptedSave = false
-
-    override fun willShow() {
-        if (observer?.isActive == true) return
-        module.groceries.refresh()
-        observer = scope.launch { module.groceries.state.collect { current.value = it } }
-    }
-
-    override fun willHide() {
-        if (module.groceries.state.value.adding) {
-            interruptedSave = true
-            notice.value = "Save interrupted. It may have reached the server. Go back and check the list before adding again."
+@Composable
+private fun GroceryRow(
+    item: GroceryItem, enabled: Boolean, pending: Boolean, onToggle: () -> Unit, onRemove: (() -> Unit)? = null,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f)
+            .semantics {
+                contentDescription = "${if (item.checked) "Uncheck" else "Check"} ${item.name}"
+                toggleableState = if (item.checked) ToggleableState.On else ToggleableState.Off
+            }.lightClickable(enabled = enabled, role = Role.Checkbox, onClick = onToggle)
+            .heightIn(min = 44.dp).padding(vertical = 0.5f.gridUnitsAsDp()),
+            horizontalArrangement = Arrangement.spacedBy(0.5f.gridUnitsAsDp()),
+            verticalAlignment = Alignment.CenterVertically) {
+            LightText(if (item.checked) "[x]" else "[ ]", LightTextVariant.Detail, monospace = true)
+            Column(Modifier.weight(1f)) {
+                LightText(item.name, LightTextVariant.ParagraphWide, lighten = item.checked, strikethrough = item.checked)
+                if (pending) BodyText("Saving...", true)
+                else if (item.isManual) BodyText("added", true)
+            }
+            if (item.quantityText.isNotEmpty()) BodyText(item.quantityText, true, Modifier.widthIn(max = 6f.gridUnitsAsDp()))
         }
-        module.groceries.stop()
-        super.willHide()
+        if (onRemove != null) ActionButton("Remove", enabled,
+            modifier = Modifier.semantics { contentDescription = "Remove ${item.name}" }, action = onRemove)
     }
-
-    override fun onScreenDestroy() {
-        module.close()
-        super.onScreenDestroy()
-    }
-
-    @Composable
-    override fun Content() {
-        val state by current.collectAsState()
-        val values by draft.collectAsState()
-        val message by notice.collectAsState()
-        val samePlan = state.plan?.planId == expectedPlanId
-        val editable = !state.adding
-        Page("Add grocery item") {
-            if (state.loading) Detail("Checking the active plan…")
-            if (!state.loading && !samePlan) Detail("The active plan changed. Go back and reopen the list.")
-            state.error?.let { Detail(it) }
-            message?.let { Detail(it) }
-            Choice("Name: ${values.name.ifBlank { "enter a name" }}", editable) {
-                navigateTo({ TextEditorScreen(it, "Item name", values.name) }) { text ->
-                    draft.value = draft.value.copy(name = text)
-                }
-            }
-            Choice("Quantity: ${values.quantity.ifBlank { "optional" }}", editable) {
-                navigateTo({ TextEditorScreen(it, "Quantity (optional)", values.quantity) }) { text ->
-                    draft.value = draft.value.copy(quantity = text)
-                }
-            }
-            Choice("Section: ${STORE_SECTIONS[values.section] ?: "Other (default)"}", editable) {
-                navigateTo({ SectionPickerScreen(it) }) { section -> draft.value = draft.value.copy(section = section) }
-            }
-            Choice(if (state.adding) "Saving…" else "Add item",
-                editable && !state.loading && !state.isStale && samePlan && !interruptedSave && values.name.isNotBlank()) {
-                val job = module.groceries.addManualItem(
-                    values.name, values.quantity.trim().takeIf { it.isNotEmpty() }, values.section,
-                ) ?: return@Choice
-                scope.launch {
-                    job.join()
-                    if (!job.isCancelled && module.groceries.state.value.error == null) goBack(Unit)
-                }
-            }
-        }
-    }
-}
-
-private class SectionPickerScreen(activity: SealedLightActivity) : NativeScreen<String>(activity) {
-    @Composable
-    override fun Content() {
-        Page("Store section") {
-            STORE_SECTIONS.forEach { (key, label) -> Choice(label) { goBack(key) } }
-        }
-    }
+    Separator()
 }

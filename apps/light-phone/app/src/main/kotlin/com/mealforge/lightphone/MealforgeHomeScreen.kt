@@ -14,6 +14,8 @@ import com.thelightphone.sdk.InitialScreen
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.rememberKeyboardOptions
+import com.thelightphone.sdk.ui.LightBarButton
+import com.thelightphone.sdk.ui.LightTextField
 import com.thelightphone.sdk.ui.LightTextInputEditor
 import com.thelightphone.sdk.ui.LightTheme
 import com.thelightphone.sdk.ui.LightThemeColors
@@ -26,65 +28,105 @@ import kotlinx.coroutines.launch
 private val SERVER_URL = stringPreferencesKey("mealforge_server_url")
 private val SERVER_ACCEPTED = booleanPreferencesKey("mealforge_server_accepted")
 private const val DEFAULT_SERVER = "https://meals.loosewire.dev"
-
-private data class ServerSetup(
-    val url: String = DEFAULT_SERVER,
-    val accepted: Boolean = false,
-    val error: String? = null,
-    val saving: Boolean = false,
-)
+private data class ServerSetup(val url: String = DEFAULT_SERVER, val accepted: Boolean = false,
+    val error: String? = null, val saving: Boolean = false, val loaded: Boolean = false)
 
 @InitialScreen
 class MealforgeHomeScreen(activity: SealedLightActivity) : NativeScreen<Unit>(activity) {
     private val setup = MutableStateFlow(ServerSetup())
-    private var loaded = false
+    private val settings = MutableStateFlow(false)
+    private var workspace: Workspace? = null
 
     override fun willShow() {
-        if (loaded) return
+        if (setup.value.loaded) {
+            if (!settings.value) workspace?.show()
+            return
+        }
         scope.launch {
             try {
                 val preferences = lightContext.dataStore.data.first()
-                setup.value = ServerSetup(
-                    url = preferences[SERVER_URL] ?: DEFAULT_SERVER,
-                    accepted = preferences[SERVER_ACCEPTED] ?: false,
-                )
-                loaded = true
-            } catch (cancelled: CancellationException) {
-                throw cancelled
+                setup.value = ServerSetup(preferences[SERVER_URL] ?: DEFAULT_SERVER,
+                    preferences[SERVER_ACCEPTED] ?: false, loaded = true)
+                if (setup.value.accepted) openWorkspace()
+            } catch (cancelled: CancellationException) { throw cancelled
             } catch (error: Exception) {
-                setup.value = setup.value.copy(error = error.message ?: "Could not read setup.")
+                setup.value = setup.value.copy(loaded = true, error = error.message ?: "Could not read setup.")
             }
         }
+    }
+
+    override fun willHide() { workspace?.hide(); super.willHide() }
+    override fun onScreenDestroy() { workspace?.close(); super.onScreenDestroy() }
+
+    private val editText: EditNativeText = { title, initial, onSubmit ->
+        navigateTo({ TextEditorScreen(it, title, initial) }, onSubmit)
+    }
+
+    private fun openWorkspace() {
+        val url = setup.value.url
+        if (workspace?.url != url) {
+            workspace?.close()
+            val client = MealforgeClient(url)
+            val navigation = WebViewNavigation()
+            workspace = Workspace(url, client, navigation,
+                PlansPanel(client, scope,
+                    openPlan = { id -> navigateTo({ PlanDetailScreen(it, url, id) }) { selectSection(it) } },
+                    openRecipe = { id -> navigateTo({ RecipeDetailScreen(it, url, id) }) { selectSection(it) } },
+                    editText = editText, onFilter = navigation::selectPlans),
+                RecipesPanel(client, scope,
+                    openRecipe = { id -> navigateTo({ RecipeDetailScreen(it, url, id) }) { selectSection(it) } },
+                    editText = editText),
+                GroceryPanel(url, scope, lightContext.dataStore, editText))
+        }
+        settings.value = false
+        workspace?.show()
+    }
+
+    private fun selectSection(section: MainSection) {
+        val current = workspace ?: return
+        if (current.navigation.state.value.section == section) return
+        current.hide()
+        current.navigation.selectSection(section)
+        current.show()
     }
 
     @Composable
     override fun Content() {
         val state by setup.collectAsState()
-        Page("MealForge") {
-            Detail(state.url)
-            if (state.accepted) {
-                Choice("Groceries") { navigateTo({ GroceryScreen(it, state.url) }) }
-                PlanListKind.entries.forEach { kind ->
-                    Choice(kind.title) { navigateTo({ PlanListScreen(it, state.url, kind) }) }
-                }
-                Choice("Recipes") { navigateTo({ RecipeListScreen(it, state.url) }) }
+        val editing by settings.collectAsState()
+        val current = workspace
+        if (!state.loaded) {
+            Frame("MealForge", backLabel = "") { BodyText("Loading...") }
+        } else if (current != null && state.accepted && !editing) {
+            val route by current.navigation.state.collectAsState()
+            Frame(when (route.section) {
+                MainSection.Plans -> "Meal plans"
+                MainSection.Recipes -> "Recipes"
+                MainSection.Grocery -> "Grocery"
+            }, backLabel = "", main = route.section, onMain = ::selectSection,
+                scrollKey = if (route.section == MainSection.Plans) route.plans else route.section,
+                right = LightBarButton.Text("Server", onClick = { current.hide(); settings.value = true })) {
+                current.panel().Content()
             }
-            Detail(if (state.url.startsWith("https://")) {
-                "HTTPS checks the server certificate on connection. Only use a MealForge server you trust."
-            } else {
-                "HTTP is unencrypted. Only use a server and network you trust."
-            })
-            Detail("This client uses the server's existing public API. It does not add a login or verify who operates the server.")
-            state.error?.let { Detail(it) }
-            Choice("Edit server URL", !state.saving) {
-                navigateTo({ TextEditorScreen(it, "Server origin", state.url) }) { value ->
-                    setup.value = setup.value.copy(url = value, accepted = false, error = null)
+        } else {
+            Frame("Server setup", backLabel = if (current == null) "Close" else "Back", backAction = {
+                if (current == null) goBack(null) else {
+                    setup.value = ServerSetup(current.url, accepted = true, loaded = true)
+                    settings.value = false
+                    current.show()
                 }
-            }
-            if (!state.accepted) {
-                Choice(if (state.saving) "Saving…" else "Trust this server and save", !state.saving) {
-                    saveServer()
+            }) {
+                BodyText("Choose a MealForge server you trust.")
+                LightTextField("Server origin", state.url, "https://your-server",
+                    onClick = { editText("Server origin", state.url) { setup.value = setup.value.copy(url = it, accepted = false, error = null) } })
+                ActionButton("Edit server URL", !state.saving) {
+                    editText("Server origin", state.url) { setup.value = setup.value.copy(url = it, accepted = false, error = null) }
                 }
+                BodyText(if (state.url.startsWith("https://")) "HTTPS checks the server certificate."
+                    else "HTTP is unencrypted. Only use a trusted server and network.", secondary = true)
+                BodyText("Uses this server's existing public API. No additional login.", secondary = true)
+                state.error?.let { BodyText(it) }
+                ActionButton(if (state.saving) "Saving..." else "Trust this server and save", !state.saving) { saveServer() }
             }
         }
     }
@@ -95,11 +137,9 @@ class MealforgeHomeScreen(activity: SealedLightActivity) : NativeScreen<Unit>(ac
         scope.launch {
             try {
                 val url = normalizeServerUrl(setup.value.url)
-                lightContext.dataStore.edit {
-                    it[SERVER_URL] = url
-                    it[SERVER_ACCEPTED] = true
-                }
-                setup.value = ServerSetup(url = url, accepted = true)
+                lightContext.dataStore.edit { it[SERVER_URL] = url; it[SERVER_ACCEPTED] = true }
+                setup.value = ServerSetup(url, accepted = true, loaded = true)
+                openWorkspace()
             } catch (cancelled: CancellationException) {
                 setup.value = setup.value.copy(saving = false)
                 throw cancelled
@@ -110,26 +150,30 @@ class MealforgeHomeScreen(activity: SealedLightActivity) : NativeScreen<Unit>(ac
     }
 }
 
+private class Workspace(
+    val url: String, private val client: MealforgeClient, val navigation: WebViewNavigation,
+    private val plans: PlansPanel, private val recipes: RecipesPanel, private val groceries: GroceryPanel,
+) {
+    fun panel(): MealforgePanel = when (navigation.state.value.section) {
+        MainSection.Plans -> plans; MainSection.Recipes -> recipes; MainSection.Grocery -> groceries
+    }
+    fun show(): Unit = panel().show()
+    fun hide(): Unit = panel().hide()
+    fun close() { plans.hide(); recipes.hide(); groceries.close(); client.close() }
+}
+
 internal class TextEditorScreen(
-    activity: SealedLightActivity,
-    private val title: String,
-    private val initial: String,
+    activity: SealedLightActivity, private val title: String, private val initial: String,
 ) : SimpleLightScreen<String>(activity) {
     @Composable
     override fun Content() {
         val text = rememberTextFieldState(initial)
         val keyboard = rememberKeyboardOptions()
         LightTheme(colors = LightThemeColors.Dark) {
-            LightTextInputEditor(
-                title = title,
-                state = text,
-                keyboardOptionsFlow = keyboard,
-                singleLine = true,
-                submitLabel = "SAVE",
-                onSubmit = { goBack(it.toString()) },
-                onBack = { goBack(null) },
-                modifier = Modifier.fillMaxSize().background(LightThemeTokens.colors.background),
-            )
+            LightTextInputEditor(title = title, state = text, keyboardOptionsFlow = keyboard,
+                singleLine = true, submitLabel = "SAVE",
+                onSubmit = { goBack(it.toString()) }, onBack = { goBack(null) },
+                modifier = Modifier.fillMaxSize().background(LightThemeTokens.colors.background))
         }
     }
 }
