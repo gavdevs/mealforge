@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Runs the Gradle wrapper that ships with the pinned SDK checkout, so this build
+# uses exactly the SDK's pinned Gradle distribution instead of a copy.
+#
+#   apps/light-phone/gradlew :app:assembleDebug -DlightSdk.unsigned=true
+#
+# Provision the checkout first with scripts/bootstrap-sdk.sh.
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+sdk_dir="${LIGHT_SDK_DIR:-$here/.sdk}"
+
+"$here/scripts/bootstrap-sdk.sh"
+
+if [ ! -x "$sdk_dir/gradlew" ]; then
+  echo "error: no Gradle wrapper at $sdk_dir/gradlew" >&2
+  echo "       run $here/scripts/bootstrap-sdk.sh first (or set LIGHT_SDK_DIR)." >&2
+  exit 1
+fi
+
+exec "$sdk_dir/gradlew" -p "$here" "$@"

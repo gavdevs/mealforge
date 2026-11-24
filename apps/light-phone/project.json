@@ -1,0 +1,33 @@
+{
+  "name": "light-phone",
+  "projectType": "application",
+  "sourceRoot": "apps/light-phone/app/src",
+  "targets": {
+    "prep": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "bash scripts/bootstrap-sdk.sh",
+        "cwd": "apps/light-phone"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["prep"],
+      "options": {
+        "command": "./gradlew -DlightSdk.unsigned=true :app:assembleDebug --console=plain",
+        "cwd": "apps/light-phone"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["prep"],
+      "options": {
+        "command": "./gradlew :app:testDebugUnitTest --console=plain",
+        "cwd": "apps/light-phone"
+      }
+    }
+  }
+}
