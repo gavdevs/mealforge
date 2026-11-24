@@ -17,7 +17,7 @@ Only initial handoff changes were the untracked spec and SVG/PNG concept; they r
 - [x] Run the prior-session native protocol tests; distinguish compile-RED from behavior RED.
 - [x] Implement the real protocol codec in the authorized implementation continuation.
 - [x] Add the SDK grocery/model/UI path and prove check/add/remove through disposable HTTP/SQLite reads.
-- [ ] Continue all plan, recipe, cook-mode, rename/favorite, grocery-entry/removal, navigation, lifecycle and cache workflows from the approved scope, test-first.
+- [x] Add compiled native plan/recipe/cook, rename/favorite/cooked, grocery-entry/removal, navigation and lifecycle counterparts, test-first. Runtime acceptance remains separate.
 - [ ] Perform independent read-only review, static checks, APK build, artifact checksum and device-independent handoff. No install/release authorization.
 
 ## Protocol evidence
@@ -43,10 +43,10 @@ Build/test results and local commit identifiers are recorded in the final handof
 
 | Spec acceptance item | Current evidence / remaining work |
 | --- | --- |
-| All native web counterparts | Partial: native setup/trust, active-plan read and grocery read/check/add/remove screens. Full plans, recipes and cook workflows unfinished. |
-| Contract coverage | 10 unchanged-server checks; 8 native codec + 8 store + 6 real HTTP/backend tests. Plan/recipe/ingredient/status/rename/favorite contracts remain. |
-| Unit/UI safeguards | Grocery duplicate-tap/stale-response/cancellation tested. Runtime wheel/back/input, cook/wake, long-text, cache/persistence acceptance remains unfinished. |
-| Designated-instance integration | Native Ktor → loopback HTTP → unchanged Hono/tRPC → migrated in-memory SQLite, with mutation readback. No Android network/device test. |
+| All native web counterparts | Native lists/details/actions/input/cook screens now implemented and compiled. No visual/device acceptance; instruction markdown is literal text rather than rich formatting. |
+| Contract coverage | 10 unchanged-server checks; 56 native JVM cases cover codec, real plan/recipe/grocery HTTP, stores, cooking and fixture startup. |
+| Unit/UI safeguards | Grocery/plan/recipe gates, stale/cancel behavior and cook navigation/wake intent tested. Actual wheel/back/text input, rendering, persistence and wake behavior remain unverified. |
+| Designated-instance integration | Native Ktor → loopback HTTP → unchanged Hono/tRPC → migrated in-memory SQLite with write/readback. No Android network/device test. |
 | Independent review, static checks and app build | Tracer unit tests/APK build and real Nx prep/test/build passed. Independent feature review/static/runtime acceptance remains. |
 | Candidate debug APK and checksum | Unsigned tracer APK produced; final candidate checksum to follow. Not a device-tested/full-parity artifact. |
 
@@ -148,3 +148,40 @@ Stable-file rerun completed after test ownership returned:
 failures/errors/skips. Biome passed the extended fixture after whitespace-only
 formatting corrections. The approved spec/SVG/PNG provenance was committed
 unchanged as `f1d365628ed4b4816a2e05b02599b60c62f29ec2`.
+
+## Native screen stage
+
+Saved domain checkpoints: `d5953ca3ad275d516d6812cab32e87bae587ea88`
+and final separate-agent plan-state tests
+`6ac79599e39dee02062748cf7a6c1cde8c07b074`.
+
+New native home choices open active/upcoming/completed/favorite plan lists,
+plan detail, optional-name Save/Cancel with the 80-character/name-favorite
+rules, plan activate/complete/favorite and eligible cooked toggles. Meal groups
+use the existing category order; titles navigate to recipes, metadata uses the
+existing limit-200 recipe query. Views refetch on returning to the SDK screen.
+
+Recipes have favorites/history, submitted plain-text search and clear,
+category select/tap-to-clear, detail metadata, grouped ingredient quantities
+and units/to-taste, literal instructions, usage summary and server-confirmed
+favorite changes. Search is submitted from the SDK full-screen text editor
+instead of issuing debounced requests while editing. List rows open the detail
+for actions rather than recreating web cards or tabs.
+
+Cook mode is a separate SDK screen with previous/next/explicit Done/Exit,
+wheel step bounds and a composition-scoped `Modifier.keepScreenOn()` only
+while the pure session is visible and unfinished. Pause/hide releases its wake
+intent; return preserves the step. No timers, backend sessions or background
+polling. The old read-only active-plan screen was removed.
+
+Separate test-only agents saved four recipe-store and three cook-visibility
+tests before implementation. Initial UI compilation showed missing store/cook
+APIs (compile-RED, zero tests). After implementation:
+`:app:testDebugUnitTest -DlightSdk.unsigned=true :app:assembleDebug` succeeded
+(90 tasks: 15 executed, 2 from cache, 73 up-to-date).
+XML contains **56 tests, 0 failures/errors/skips**; the additional tests prove
+recipe duplicate/stopped/read ownership and pure wake/wheel/visibility intent,
+not an Android renderer or real hardware.
+
+Independent read-only workflow/boundary reviews and final forced checks are in
+progress. No full web-port acceptance or physical UI behavior is claimed.

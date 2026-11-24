@@ -26,13 +26,27 @@ fun splitCookingSteps(markdown: String): List<String> {
         .ifEmpty { listOf("") }
 }
 
-data class CookProgress(val steps: List<String>, val index: Int = 0, val finished: Boolean = false) {
+data class CookProgress(val steps: List<String>, val index: Int = 0, val finished: Boolean = false,
+    val visible: Boolean = false) {
     val current: String get() = steps[index]
+    val keepAwake: Boolean get() = visible && !finished
 }
 
 class CookSession(markdown: String) {
     private val progress = MutableStateFlow(CookProgress(splitCookingSteps(markdown)))
     val state: StateFlow<CookProgress> = progress.asStateFlow()
+
+    fun show() { progress.update { if (it.finished || it.visible) it else it.copy(visible = true) } }
+    fun hide() { progress.update { if (it.visible) it.copy(visible = false) else it } }
+
+    fun wheel(forward: Boolean) {
+        progress.update {
+            if (!it.visible || it.finished) it else {
+                val index = (it.index + if (forward) 1 else -1).coerceIn(0, it.steps.lastIndex)
+                if (index == it.index) it else it.copy(index = index)
+            }
+        }
+    }
 
     fun next() {
         progress.update {

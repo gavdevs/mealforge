@@ -64,7 +64,10 @@ class MealforgeHomeScreen(activity: SealedLightActivity) : NativeScreen<Unit>(ac
             Detail(state.url)
             if (state.accepted) {
                 Choice("Groceries") { navigateTo({ GroceryScreen(it, state.url) }) }
-                Choice("Active plan") { navigateTo({ ActivePlanScreen(it, state.url) }) }
+                PlanListKind.entries.forEach { kind ->
+                    Choice(kind.title) { navigateTo({ PlanListScreen(it, state.url, kind) }) }
+                }
+                Choice("Recipes") { navigateTo({ RecipeListScreen(it, state.url) }) }
             }
             Detail(if (state.url.startsWith("https://")) {
                 "HTTPS checks the server certificate on connection. Only use a MealForge server you trust."

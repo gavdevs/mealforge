@@ -4,10 +4,12 @@ import android.view.KeyEvent
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -102,4 +104,10 @@ internal fun Choice(label: String, enabled: Boolean = true, action: () -> Unit) 
 internal fun Detail(text: String) {
     LightText(text = text, variant = LightTextVariant.Detail, lighten = true,
         modifier = Modifier.padding(vertical = 6.dp))
+}
+
+@Composable
+internal fun Separator() {
+    Box(Modifier.fillMaxWidth().padding(vertical = 8.dp).height(1.dp)
+        .background(LightThemeTokens.colors.contentSecondary))
 }
