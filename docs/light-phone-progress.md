@@ -18,7 +18,7 @@ Only initial handoff changes were the untracked spec and SVG/PNG concept; they r
 - [x] Implement the real protocol codec in the authorized implementation continuation.
 - [x] Add the SDK grocery/model/UI path and prove check/add/remove through disposable HTTP/SQLite reads.
 - [x] Add compiled native plan/recipe/cook, rename/favorite/cooked, grocery-entry/removal, navigation and lifecycle counterparts, test-first. Runtime acceptance remains separate.
-- [ ] Perform independent read-only review, static checks, APK build, artifact checksum and device-independent handoff. No install/release authorization.
+- [x] Perform independent read-only review, static checks, APK build, artifact checksum and device-independent handoff. No install/release authorization; runtime acceptance remains open.
 
 ## Protocol evidence
 
@@ -35,7 +35,7 @@ Native tests target the first protocol increment, not full acceptance. They call
 
 ## Remaining proof
 
-The grocery tracer and active-plan read screen now compile and build. Full plan/recipe/cook counterparts and runtime UI acceptance remain unfinished. Twenty-two native tests cover the codec, grocery store races and real HTTP writes/readback; they do not establish keyboard/wheel/back, persistence or visual/device acceptance. No installation, production mutation, SDK-core edit, API/web edit, signing/release, push or deployment is included.
+Native plan/recipe/grocery/cook counterparts now compile and build; 56 JVM tests cover protocol, real disposable HTTP writes/readback, stores and cook intent. Rich markdown formatting is not implemented. Actual keyboard/wheel/back, persistent cache reopening, visual layout, Android networking and physical wake behavior remain unverified. No installation, production mutation, SDK-core edit, API/web edit, signing/release, push or deployment is included. Full web-port acceptance is not claimed.
 
 Build/test results and local commit identifiers are recorded in the final handoff and build documentation after execution.
 
@@ -47,8 +47,8 @@ Build/test results and local commit identifiers are recorded in the final handof
 | Contract coverage | 10 unchanged-server checks; 56 native JVM cases cover codec, real plan/recipe/grocery HTTP, stores, cooking and fixture startup. |
 | Unit/UI safeguards | Grocery/plan/recipe gates, stale/cancel behavior and cook navigation/wake intent tested. Actual wheel/back/text input, rendering, persistence and wake behavior remain unverified. |
 | Designated-instance integration | Native Ktor → loopback HTTP → unchanged Hono/tRPC → migrated in-memory SQLite with write/readback. No Android network/device test. |
-| Independent review, static checks and app build | Tracer unit tests/APK build and real Nx prep/test/build passed. Independent feature review/static/runtime acceptance remains. |
-| Candidate debug APK and checksum | Unsigned tracer APK produced; final candidate checksum to follow. Not a device-tested/full-parity artifact. |
+| Independent review, static checks and app build | Source workflow review found no blocker. Boundary review found relative SDK path divergence, now fixed and regression-tested; reviewer closed it. Forced native tests/lint and real Nx targets passed. Runtime acceptance remains. |
+| Candidate debug APK and checksum | Source `596b58daf149eb56f485ea4ef92cff964d1d88b7`, unsigned APK retained with SHA-256 below. No device/full-parity acceptance. |
 
 ## Continuation 2
 
@@ -183,5 +183,65 @@ XML contains **56 tests, 0 failures/errors/skips**; the additional tests prove
 recipe duplicate/stopped/read ownership and pure wake/wheel/visibility intent,
 not an Android renderer or real hardware.
 
-Independent read-only workflow/boundary reviews and final forced checks are in
-progress. No full web-port acceptance or physical UI behavior is claimed.
+Independent read-only review and forced verification results are recorded below.
+No full web-port acceptance or physical UI behavior is claimed.
+
+## Final continuation evidence
+
+- Native screen checkpoint: `26b00beb4a121ad4a8ba8849f1af390cc49cbd64`.
+- Reviewed build-integrity fix: `9a578c43da` exports the canonical, validated
+  `LIGHT_SDK_DIR` into Gradle. Regression RED was 4 pass / 1 fail: Gradle tried
+  `apps/light-phone/apps/light-phone/.sdk` after validating the correct directory.
+  GREEN in the real Nx test target: **5 pass / 0 fail**.
+- Application candidate: `596b58daf149eb56f485ea4ef92cff964d1d88b7`.
+  `usedInPlans` includes active/upcoming uncooked plan references in the real
+  fixture, not completed cooking sessions; native says "Used in N plans".
+- `NativeWorkflowReview`: source-only review found no correctness blocker.
+  `NativeBoundaryReview`: P2 relative-path issue closed by inspection after fix.
+  Neither review claims runtime/device evidence.
+
+Final commands used the documented JDK 17 / Android SDK 36:
+
+```sh
+apps/light-phone/gradlew :app:testDebugUnitTest :app:lintDebug \
+  --rerun-tasks --no-build-cache --console=plain
+pnpm exec biome check apps/light-phone/contract/fixtureServer.ts \
+  apps/light-phone/contract/protocol.test.ts \
+  apps/light-phone/scripts/bootstrapSdkChecks.ts apps/light-phone/project.json
+pnpm exec vitest run apps/light-phone/contract/protocol.test.ts
+pnpm nx run light-phone:test --skip-nx-cache
+pnpm nx run light-phone:build --skip-nx-cache
+```
+
+Observed:
+
+- Forced Gradle native tests + lint: **BUILD SUCCESSFUL**, **121 / 121 tasks
+  executed**. Actual XML totals: **56 tests, 0 failures, 0 errors, 0 skips**.
+- Biome: **4 files passed**, no fixes. In-process protocol suite: **10 passed**.
+- Nx test: prep executed, **5 provisioning/wrapper tests executed and passed**;
+  native Gradle task then reused the forced results (**62 tasks: 2 executed,
+  60 up-to-date**). This is not a second fresh 56-test run.
+- Immediately before final assembly, isolated SDK HEAD was
+  `251237ef3778c907c5dbd89e84685532c9d99a28`, with empty porcelain status.
+- Nx build: prep executed; unsigned assembly **BUILD SUCCESSFUL**, **83 tasks:
+  6 executed, 2 from cache, 75 up-to-date**.
+
+APK: `apps/light-phone/app/build/outputs/apk/debug/app-debug-unsigned.apk`.
+Retained candidate copy:
+`apps/light-phone/app/build/checkpoints/596b58daf149eb56f485ea4ef92cff964d1d88b7/app-debug-unsigned.apk`.
+SHA-256 for both:
+`66589319ddf1b18ce26b7de1981006673c9e3f8400e5c0e1e856ab2c8f68125f`.
+Unsigned verification artifact only; not installed, launched, signed or released.
+
+Next concrete decision: review the compiled native screens on an explicitly
+authorized runtime/device and decide whether literal markdown instructions are
+an acceptable presentation adaptation or need supported native rich formatting.
+Long text, full-screen keyboard entry/cancel, hardware wheel/back, lifecycle
+reopening/cache and actual wake release still need that runtime evidence.
+No protocol blocker or SDK-core compatibility change was required.
+
+Post-source-commit smoke at application candidate `596b58daf149eb56f485ea4ef92cff964d1d88b7`:
+`:app:testDebugUnitTest -DlightSdk.unsigned=true :app:assembleDebug` succeeded
+(90 tasks: 2 executed, 88 up-to-date); APK SHA-256 remained identical.
+This confirms the committed application's task graph/artifact, not another
+fresh execution of the 56 tests.

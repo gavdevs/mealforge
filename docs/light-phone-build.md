@@ -2,8 +2,9 @@
 
 Experimental, owner-scoped Android/Kotlin client for the MealForge tRPC API.
 This document records the pinned Gradle/Nx lane and tested native increments.
-The grocery tracer and active-plan read screen now exist; this is not full web
-parity. No Android runtime/device or visual acceptance is claimed.
+Native plan, recipe, grocery and cook counterparts are implemented and compile.
+This is not full web-port acceptance: Android runtime/device, text entry,
+wheel/back, visual and actual wake behavior remain unverified.
 
 ## Lane: experimental/local, not distribution-compatible
 
@@ -174,7 +175,7 @@ passed, followed by `:app:assembleDebug` (unsigned).
 
 ## Deliberately not done
 
-- Full plan/recipe/cook parity remains unfinished at the grocery checkpoint.
+- Rich markdown instruction formatting and runtime/device acceptance remain unfinished.
 - No `AndroidManifest.xml`, keystore or release signing.
 - No production server mutation, device install, push or release.
 - No changes to `apps/api`, `apps/web`, shared root config, or the SDK.
@@ -237,3 +238,53 @@ apps/light-phone/gradlew :app:testDebugUnitTest \
 With the documented JDK/SDK: **BUILD SUCCESSFUL**, 90 tasks (20 executed,
 70 up-to-date), **22 tests**: 8 codec + 8 store + 6 real HTTP/backend integration;
 zero failures/errors/skips. This is a tested tracer, not complete acceptance.
+
+## Native workflow candidate and fresh verification
+
+Current screens use SDK navigation and full-screen text entry, plain lists and
+separators. Recipe instruction source is shown literally (HTML remains inert),
+not as rich markdown. Search is submitted from the editor; actions live in the
+detail screens rather than web cards/tabs. These are documented presentation
+differences, not evidence of device acceptance.
+
+`recipes.byId.usedInPlans` is plan usage, not completed cooking history. The
+disposable fixture returns active/upcoming references with uncooked meals.
+The web labels that count "cooked"; native labels it "Used in N plans" rather
+than inventing cooking-session data. No backend change was made.
+
+The native suite now contains 56 cases: 8 codec, 8 grocery state, 6 grocery HTTP,
+7 plan HTTP, 5 plan state, 4 recipe HTTP, 4 recipe state, 8 cook-step, 3 cook
+visibility/wheel intent and 3 fixture startup. JVM intent tests do not verify a
+renderer, actual rotary/back/text input, storage lifecycle or physical wake.
+
+For uncached native execution:
+
+```sh
+# First install locked workspace dependencies and export the JDK/Android SDK above.
+apps/light-phone/gradlew :app:testDebugUnitTest :app:lintDebug \
+  --rerun-tasks --no-build-cache --console=plain
+pnpm exec vitest run apps/light-phone/contract/protocol.test.ts
+pnpm nx run light-phone:test --skip-nx-cache
+pnpm nx run light-phone:build --skip-nx-cache
+```
+
+Nx `test` executes SDK prep, five provisioning/wrapper checks (the fifth invokes
+real Gradle `help` with a relative SDK override), then the native task. An
+up-to-date native task in Nx is not another forced test execution. The app
+wrapper exports the canonical absolute checkout validated by prep so Gradle
+settings cannot resolve a relative override to a different checkout.
+
+Final application candidate: `596b58daf149eb56f485ea4ef92cff964d1d88b7`.
+Forced native test/lint execution succeeded: 121 tasks executed, XML **56 tests,
+zero failures/errors/skips**. The existing ten in-process protocol tests and
+four-file Biome check passed. Nx test executed all five provisioning/wrapper
+checks, then reused the forced native results (2 tasks executed / 60 up-to-date).
+Nx unsigned build succeeded (6 executed / 2 from cache / 75 up-to-date).
+SDK HEAD/clean status was checked immediately before assembly at the exact pin.
+
+APK: `apps/light-phone/app/build/outputs/apk/debug/app-debug-unsigned.apk`.
+Retained copy:
+`apps/light-phone/app/build/checkpoints/596b58daf149eb56f485ea4ef92cff964d1d88b7/app-debug-unsigned.apk`.
+SHA-256: `66589319ddf1b18ce26b7de1981006673c9e3f8400e5c0e1e856ab2c8f68125f`.
+Source-only independent review found no remaining blocker after the relative
+SDK-directory fix. No physical/device/renderer, signing or release claim.
