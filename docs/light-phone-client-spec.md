@@ -1,6 +1,6 @@
 # MealForge Light Phone III port
 
-Status: Owner-scoped; implementation has not started. Supersedes the assistant's earlier read-only-first proposal and cooking-session question. This scope does not authorize deployment, merge, release or device installation.
+Status: The full web workflow candidate was published as experimental `light-phone-0.1.0-alpha.1` at `69b5ee41c1a32811dc27d9ac3f9cdb1776e6e2c8`. The owner then rejected its presentation: the port must reproduce the web application's screens, information hierarchy and actions, not merely their API workflows. The current correction explicitly includes setting up the LightSDK emulator and an emulator-driven test agent. Do not claim UI completion from protocol tests, compilation or a design concept. This correction does not authorize a new release, merge, deployment or physical-phone installation.
 
 ## Outcome
 
@@ -26,11 +26,27 @@ The current TypeScript API/web apps remain unchanged. Treat the Kotlin client as
 
 ## Light Phone presentation
 
-Black background, white primary text and secondary gray text only. Translate tabs, chips, cards and touch controls into plain wheel-scrolled lists, text choices, simple manual text-entry screens and minimal separators. No colored accents, decorative card fills, grid/card navigation, persistent tab bar or app-drawer assumptions.
+Black background, white primary text and secondary gray text only. Recreate essentially all web views and their interaction patterns with LightSDK-native components, not a generic menu interpretation of them. The current web routes and components are the presentation references; the earlier monolithic concept PNG is not authoritative. Reproduce the web Plans/Recipes/Grocery navigation and in-page controls with the SDK's available bottom bar, top bar, tabs, text fields, inputs, scrolling and hardware-key behavior. Adapt colors, typography, sizing and input to Light Phone rather than copying CSS or using a WebView. Keep all important actions discoverable without an arbitrary extra menu hierarchy.
 
-Plan content around the available display and the Light SDK's screen/navigation/input behavior, verified against its current examples and documentation rather than guessed key mappings. Recipe ingredients, steps and grocery names must remain readable with long content. Entering/editing manual grocery data and a plan name must be practical on the device; don't silently drop these workflows because the phone has limited input. Do not automatically depend on or consume the uncommitted text-input work in the shared checkout; use a committed SDK revision and request a separate decision if that in-flight work becomes required.
+A fresh installation asks for the trusted server in a focused setup/settings flow. Once accepted, launching the app opens the active plan content, not a page of legal text or category links. The server origin is reachable from a small settings action; it must not displace the meal plan on every launch. Plans, grocery and recipes remain directly discoverable from every main section without manual server re-entry.
 
-Use small last-read caches only to make ordinary Android reopening/network interruption useful; cached data is visibly stale and must never fabricate an offline write. No background polling while the screen is dark and no offline edit queue/sync framework is part of the port.
+### Screen correspondence
+
+- **Meal plans:** reproduce `/plans` and its Active, Upcoming, Completed and Favorites views. Show the plan name, rename and favorite controls, status/counts, meal-type groups and recipe cards in the same information order as the web `PlanView`. Recipe-card time/tags/favorite controls and per-meal cooked actions remain available; no mandatory trip to a separate recipe screen merely to perform an existing card action. Complete/activate actions have the same scope and status restrictions.
+- **Recipes:** put search before the Favorites/History selection and meal-category filter, as the web route does. Show distinct recipe cards whose title, time, first three tags and favorite state are understandable without separate `Not a favorite` filler. Provide the web card's direct favorite action as well as opening its detail. Carry existing empty/no-match guidance and don't make a second arbitrary filter menu the default presentation.
+- **Recipe detail:** keep the title, favorite control, servings/preparation/cooking facts, meal types, description and Start cooking entry together at the top. Put sectioned ingredients and all steps below them. Preserve quantity/unit alignment and the existing used-in-plan summary. Do not silently replace the source instructions with a read-only number count.
+- **Cook view:** retain the large step index/current instruction, previous/next/done actions and explicit Exit. Make current-step navigation reachable on Light hardware and verify actual SDK/Android key delivery, wheel movement, back navigation and best-effort wake behavior rather than inferring it from code. No timer or cooking-session backend.
+- **Grocery:** keep open store-section groups first, then the manual-add form, then checked items. Use the current web form's name and store-section inputs rather than adding a new product feature merely because the backend may support more fields. Keep checkbox/quantity state visible and use the existing manual-item removal rule. Pending, failure and server-confirmation states must remain understandable per row.
+
+Long text may require a focused detail/edit screen, but expanding an item must not erase the web workflow's expected action or selection. Preserve back navigation, search/filter results and draft state across ordinary screen transitions. Avoid a second nested menu of labels when the corresponding web control can operate in place. Use small screen/regression tests for behavior and actual emulator captures for presentation, focus, clipping, line wrapping and hit-target size.
+
+### Emulator acceptance and safety
+
+Build and run against the pinned SDK's actual `sdk/emulator` system app on a dedicated API 34 test-device configuration matching the documented 1080×1240 LPIII display. Verify that this is the supported emulator (`test-keys`, system UID/package, and intended server package) before trusting the result. Building the production `com.lightos` variant remains a separate gate; a host JVM test or stock Android screenshot is not a LightOS interaction test.
+
+Use a disposable loopback fixture server with ADB reverse forwarding, not the real household backend, for every mutation workflow. The test agent must refuse an unexpected physical device/server and an unapproved fixture origin. It should capture screenshots and accessibility/UI traces for each main screen, core mutation and failure path; name the tested source revision and emulator-variant metadata; and exercise wheel/center/back operations plus practical text entry. Store fixture-only evidence separately from source. Do not claim physical-wheel, LP3 panel, battery or hardware timing equivalence from a desktop emulator.
+
+The test agent must fail initially against the generic-menu UI, then cover the corrected flows: active plan first, main-section navigation, all plan lists, card favorite/cooked/plan actions, recipe search/filter/detail/favorite, cook navigation, grocery checklist/add/remove, text cancellation, long content, loading/error/stale states and useful local reopening. No production data mutation, new authentication/deployment or remote job engine is part of this correction.
 
 ## Implementation and compatibility constraints
 
