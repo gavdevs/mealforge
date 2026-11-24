@@ -62,7 +62,7 @@ internal class RecipeDetailScreen(activity: SealedLightActivity, private val url
                 LightText(recipe.stepsMarkdown, LightTextVariant.ParagraphWide)
                 if (recipe.usedInPlans.isNotEmpty()) {
                     val uses = recipe.usedInPlans.size
-                    Detail("${if (uses == 1) "Cooked once" else "Cooked ${uses} times"} • last in ${recipe.usedInPlans.first().displayName}")
+                    Detail("Used in $uses ${if (uses == 1) "plan" else "plans"} • last in ${recipe.usedInPlans.first().displayName}")
                 }
                 Choice("Start cooking", !state.pending && !state.loading && !state.isStale) {
                     navigateTo({ CookScreen(it, recipe) })
