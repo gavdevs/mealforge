@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { type SpawnSyncReturns, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { test } from 'node:test';
 
 const root = resolve(import.meta.dirname, '..');
@@ -96,4 +96,15 @@ test('rejects untracked files in an unpopulated clone instead of hydrating over 
     assert.equal(git(directory, 'status', '--porcelain'), beforeStatus);
     assert.equal(existsSync(join(directory, 'README.md')), false);
   });
+});
+
+test('a relative SDK override builds with the same checkout the integrity guard validated', () => {
+  const repoRoot = resolve(root, '../..');
+  const result = spawnSync('bash', [join(root, 'gradlew'), 'help', '--console=plain'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    timeout: 120_000,
+    env: { ...process.env, LIGHT_SDK_DIR: relative(repoRoot, resolve(source)) },
+  });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
 });

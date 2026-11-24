@@ -12,6 +12,11 @@ sdk_dir="${LIGHT_SDK_DIR:-$here/.sdk}"
 
 "$here/scripts/bootstrap-sdk.sh"
 
+# Settings resolves relative paths from the app directory, not the caller's cwd.
+# Export the exact checkout the guard just validated.
+sdk_dir="$(cd "$sdk_dir" && pwd -P)"
+export LIGHT_SDK_DIR="$sdk_dir"
+
 if [ ! -x "$sdk_dir/gradlew" ]; then
   echo "error: no Gradle wrapper at $sdk_dir/gradlew" >&2
   echo "       run $here/scripts/bootstrap-sdk.sh first (or set LIGHT_SDK_DIR)." >&2
