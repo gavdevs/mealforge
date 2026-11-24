@@ -37,6 +37,8 @@ data class ActivePlan(
     val meals: List<PlanMeal> = emptyList(),
     val isFavorite: Boolean = false,
     val createdAt: String? = null,
+    val name: String? = null,
+    val completedAt: String? = null,
 )
 
 @Serializable
@@ -81,6 +83,42 @@ class MealforgeClient(baseUrl: String) : AutoCloseable {
         return if (data == JsonNull) null else json.decodeFromJsonElement<ActivePlan>(data)
     }
 
+    suspend fun plans(
+        status: String? = null,
+        favoritesOnly: Boolean = false,
+        limit: Int = 50,
+    ): List<ActivePlan> = json.decodeFromJsonElement(query("plans.list", buildJsonObject {
+        if (status != null) put("status", status)
+        put("favoritesOnly", favoritesOnly)
+        put("limit", limit)
+    }))
+
+    suspend fun plan(planId: Int): ActivePlan? {
+        val data = query("plans.byId", buildJsonObject { put("planId", planId) })
+        return if (data == JsonNull) null else json.decodeFromJsonElement<ActivePlan>(data)
+    }
+
+    suspend fun activatePlan(planId: Int): ActivePlan =
+        json.decodeFromJsonElement(mutate("plans.activate", buildJsonObject { put("planId", planId) }))
+
+    suspend fun completePlan(planId: Int): ActivePlan =
+        json.decodeFromJsonElement(mutate("plans.complete", buildJsonObject { put("planId", planId) }))
+
+    suspend fun renamePlan(planId: Int, name: String?): ActivePlan =
+        json.decodeFromJsonElement(mutate("plans.rename", buildJsonObject {
+            put("planId", planId)
+            put("name", name)
+        }))
+
+    suspend fun togglePlanFavorite(planId: Int): ActivePlan =
+        json.decodeFromJsonElement(mutate("plans.toggleFavorite", buildJsonObject { put("planId", planId) }))
+
+    suspend fun setMealCooked(mealId: Int, cooked: Boolean): ActivePlan =
+        json.decodeFromJsonElement(mutate("plans.setMealCooked", buildJsonObject {
+            put("mealId", mealId)
+            put("cooked", cooked)
+        }))
+
     suspend fun groceryItems(planId: Int): List<GroceryItem> =
         json.decodeFromJsonElement(query("grocery.itemsForPlan", buildJsonObject { put("planId", planId) }))
 
@@ -106,6 +144,26 @@ class MealforgeClient(baseUrl: String) : AutoCloseable {
         val data = mutate("grocery.removeManualItem", buildJsonObject { put("itemId", itemId) })
         check((data as? JsonObject)?.get("ok") == JsonPrimitive(true)) { "MealForge did not confirm removal." }
     }
+
+    suspend fun recipes(
+        query: String? = null,
+        favoritesOnly: Boolean = false,
+        mealType: String? = null,
+        limit: Int = 100,
+    ): List<RecipeSummary> = json.decodeFromJsonElement(this.query("recipes.list", buildJsonObject {
+        if (query != null) put("query", query.trim())
+        put("favoritesOnly", favoritesOnly)
+        if (mealType != null) put("mealType", mealType)
+        put("limit", limit)
+    }))
+
+    suspend fun recipe(id: Int): RecipeDetail? {
+        val data = query("recipes.byId", buildJsonObject { put("id", id) })
+        return if (data == JsonNull) null else json.decodeFromJsonElement<RecipeDetail>(data)
+    }
+
+    suspend fun toggleRecipeFavorite(id: Int): RecipeSummary =
+        json.decodeFromJsonElement(mutate("recipes.toggleFavorite", buildJsonObject { put("id", id) }))
 
     private suspend fun query(procedure: String, input: JsonObject? = null): JsonElement {
         val response = http.get(base + TrpcProtocol.queryPath(procedure, input?.toString()))

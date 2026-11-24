@@ -99,6 +99,19 @@ Host toolchain used below: JDK 17 at
 build-tools present). Both the independent app's protocol tests and unsigned
 debug APK build have now succeeded with that toolchain.
 
+Fresh checkout prerequisite: from the repository root run
+`pnpm install --frozen-lockfile`. Native integration tests launch
+`node --import tsx` from `apps/api`; Gradle alone does not install these locked
+workspace dependencies. The shared fixture launcher reports an early child exit
+with its exit code, captured output and this prerequisite instead of waiting
+60 seconds for a URL.
+
+When using an external clean pinned checkout, export both
+`LIGHT_SDK_DIR=/path/to/checkout` and `LIGHT_SDK_FIXTURE_REPO=/path/to/checkout`
+for the Nx provisioning tests. Without the fixture override, those tests use
+the app-local `.sdk` as their local clone source. Pin and dirty-input guards
+are unchanged.
+
 ```sh
 cd apps/light-phone
 

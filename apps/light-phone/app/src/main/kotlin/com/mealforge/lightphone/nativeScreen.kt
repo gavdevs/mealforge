@@ -61,14 +61,22 @@ abstract class NativeScreen<R>(activity: SealedLightActivity) : SimpleLightScree
         return true
     }
 
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
+        wheelScroll != null && (keyCode == 317 || keyCode == 318)
+
     @Composable
-    protected fun Page(title: String, content: @Composable ColumnScope.() -> Unit) {
+    protected fun Page(
+        title: String,
+        modifier: Modifier = Modifier,
+        backLabel: String = "BACK",
+        content: @Composable ColumnScope.() -> Unit,
+    ) {
         val scroll = rememberScrollState()
         SideEffect { wheelScroll = scroll }
         LightTheme(colors = LightThemeColors.Dark) {
-            Column(Modifier.fillMaxSize().background(LightThemeTokens.colors.background)) {
+            Column(modifier.fillMaxSize().background(LightThemeTokens.colors.background)) {
                 LightTopBar(
-                    leftButton = LightBarButton.Text("BACK", onClick = { goBack(null) }),
+                    leftButton = LightBarButton.Text(backLabel, onClick = { goBack(null) }),
                     center = LightTopBarCenter.Text(title),
                 )
                 LightScrollView(Modifier.weight(1f).padding(horizontal = 16.dp), scrollState = scroll) {

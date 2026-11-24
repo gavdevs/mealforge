@@ -89,3 +89,62 @@ executed assertion RED. Next failure was unavailable JDK `HttpServer` imports
 under the Android test compiler; replacing only test transport with
 `ServerSocket` preserved all eight store behavior assertions. Six integration
 tests use the actual disposable backend and confirm returned state by reads.
+
+Saved grocery checkpoint: `1754f191f709014c258be05bc061ab000e937b35`.
+Its unsigned APK is retained outside Git at
+`apps/light-phone/app/build/checkpoints/1754f191f709014c258be05bc061ab000e937b35/app-debug-unsigned.apk`.
+SHA-256: `90f3a790e70f29b8db453e637c3b5cf6bd5a9a18b2252a6a24bc5d2a3ba5890f`.
+SDK HEAD was exactly `251237ef3778c907c5dbd89e84685532c9d99a28`;
+`git status --porcelain` in the isolated dependency returned no entries.
+
+Additional grocery-checkpoint checks: `:app:lintDebug` succeeded (114 tasks:
+52 executed, 6 from cache, 56 up-to-date); Biome checked fixture server,
+provisioning checks and Nx project JSON with no fixes; the ten unchanged-backend
+TypeScript protocol tests passed under the actual Node runtime. Plan and
+recipe/cook test-only agents are preparing the next contracts before production
+implementation. No runtime UI acceptance is inferred from static lint.
+
+## Continuation 3: interrupted contracts reconciled
+
+The independently verified grocery baseline is recorded in
+`apps/light-phone/build/verified/forge-grocery-1754f19-verification.txt`.
+Its forced 22-test execution is distinct from Nx's subsequent up-to-date
+Gradle reuse; its APK and OMP's APK have different recorded checksums.
+
+Initial current-tree `:app:testDebugUnitTest` failed compilation: extracted
+fixture KDoc contained a nested `/*` and plan methods were missing. No tests
+executed. After syntax repair and real plan protocol implementation:
+**41 tests executed, 40 passed, 1 failed** at `planClientTest.kt:198`.
+That test incorrectly toggled the already-favorite fixture plan and expected
+it still favorite. Actual unchanged `plans/service.ts:410-422` flips
+`!plan.isFavorite`; the fixture confirms it. The test now explicitly checks the
+unfavorite transition before favoriting again and testing the name guard.
+No production behavior or backend was changed to satisfy the incorrect assertion.
+
+Separate test-only agents then added five plan-state gate/lifecycle tests and
+three fixture-startup regressions. Their missing-symbol compile-RED was observed.
+The shared launcher now fails promptly on child exit, reports the exit code and
+`pnpm install --frozen-lockfile`, validates the loopback URL and kills rejected
+children. Native plan store reads and mutations are server-confirmed, guarded
+against duplicate/stopped/stale writes, status/meal-id checked and reconcile
+errors by read without mutation retry.
+
+`apps/light-phone/gradlew :app:testDebugUnitTest --console=plain`:
+**BUILD SUCCESSFUL**, 62 tasks (9 executed, 53 up-to-date).
+Actual XML: **49 tests**, 0 failures/errors/skips:
+8 codec, 8 grocery store, 6 grocery HTTP, 7 plan HTTP, 5 plan store,
+4 recipe HTTP, 8 cook-step, 3 fixture-startup. Recipe models/transport and pure
+cook bounds are implemented; plan/recipe/cook native screens are not yet complete.
+
+The first combined test/assembly attempt overlapped a test-only agent's final
+file edit and failed on incomplete test syntax; it is not another executed test
+result. Standalone unsigned assembly then succeeded (83 tasks: 3 executed,
+80 up-to-date), with the dependency HEAD/clean guard checked immediately before
+the build. A stable-file test rerun is required before the next code checkpoint.
+
+Stable-file rerun completed after test ownership returned:
+`:app:testDebugUnitTest -DlightSdk.unsigned=true :app:assembleDebug` succeeded
+(90 tasks: 5 executed, 85 up-to-date). XML again contains 49 tests and zero
+failures/errors/skips. Biome passed the extended fixture after whitespace-only
+formatting corrections. The approved spec/SVG/PNG provenance was committed
+unchanged as `f1d365628ed4b4816a2e05b02599b60c62f29ec2`.
