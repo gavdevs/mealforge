@@ -91,3 +91,22 @@ Two initial runtime attempts stopped at Upcoming with a visible `unexpected end 
 
 The next runtime failure was actual wheel delivery: API34 `input keyevent 318` left cook step1 unchanged. A bounded test-only raw KeyEvent helper proved `KeyEvent.keyCodeFromString("318") == 0`, while injecting literal318 advanced the real cook view to step2. This is an API34 shell symbolic-table limitation, not a passing wheel test using the original command. The first helper used context-dependent InputManager and failed with NPE; InputManagerGlobal delivered the observed raw event successfully. No SDK source or application state was patched.
 
+### Runtime mutation proof and metadata regression
+
+`ui-full` reached33 UI assertions,12 unchanged-handler readback assertions and23 captures before failing its long-content extension. It verified grocery check/uncheck/manual add/remove, plan favorite on/off, cooked/not-cooked and inline recipe favorite on/off against returned server state. Raw317/318/317 and focused ENTER activation advanced the actual cook view; hardware BACK returned to recipes. Inspected grocery open/checked/manual-added and rename/upcoming images: readable native forms/rows and gray secondary quantities, no generic-menu replacement. The run still failed overall: after process relaunch the test wrongly assumed History remained selected; the app correctly reopened its default Favorites tab. The extension now explicitly selects History. No application behavior was weakened to pass that check.
+
+A separate nested-back run passed4 UI assertions and3 captures. Its directory is named `nested-back-red`, but it was GREEN immediately; no application bug or production change was inferred from that name. The pinned SDK calls result callbacks only for non-null results.
+
+An actual independent regression was found and reproduced with recipe metadata deliberately held by the fixture:
+
+```sh
+python3 apps/light-phone/scripts/emulatorUi.py --scenario metadata --evidence apps/light-phone/build/emulator/evidence/metadata-red
+```
+
+RED: `Complete Bean bowls is disabled` (56.06s). Cooked transitions must depend on the confirmed plan, not optional recipe-card metadata. Split favorite availability from cooked-action availability; unknown favorites stay disabled while the plan's valid cooked action remains available. The same scenario GREEN (1 real server-state assertion,3 captures) confirmed the meal's cooked timestamp through `plans.byId`. No stub or assertion weakening.
+
+Re-ran forced native tests/lint/unsigned assembly after that correction:143 tasks executed,BUILD SUCCESSFUL in48s; XML67 tests,0 failures/errors/skips. SDK exact pin/clean guard passed immediately before assembly. Test APK SHA256 `23c490e17b26706dfaeab341e0e42262d7ed66b383dea022e521ad399aed6cf7`; build metadata explicitly records dirty source plus native-content hash for the two pending source changes.
+
+Live resumed native session: `01a20b9e-6dc9-7385-9d33-bfdcadab0ca5`, exposed by `PI_SESSION_ID`.
+Transcript: `/home/gav/.hermes/profiles/forge/cache/scratch/omp-mealforge-light-phone/sessions/2026-11-24T03-34-21-897Z_01a20b9e-6dc9-7385-9d33-bfdcadab0ca5.jsonl`.
+

@@ -320,7 +320,8 @@ internal class PlanContent(
                     recipe?.tags.orEmpty(), recipe?.isFavorite ?: false,
                     onOpen = { openRecipe(meal.recipeId) }, onFavorite = { favorites.toggle(meal.recipeId) },
                     pending = meal.recipeId in cards.pendingIds,
-                    enabled = enabled && recipe != null && error == null,
+                    enabled = enabled,
+                    favoriteEnabled = enabled && recipe != null && error == null,
                     cooked = meal.cookedAt != null,
                     onCooked = if (plan.status == "upcoming") null else {
                         { store.setMealCooked(meal.mealId, meal.cookedAt == null); Unit }

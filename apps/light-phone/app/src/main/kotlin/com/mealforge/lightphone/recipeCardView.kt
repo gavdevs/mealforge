@@ -29,6 +29,7 @@ internal fun RecipeCardView(
     onFavorite: () -> Unit,
     pending: Boolean = false,
     enabled: Boolean = true,
+    favoriteEnabled: Boolean = enabled,
     cooked: Boolean? = null,
     onCooked: (() -> Unit)? = null,
 ) {
@@ -42,7 +43,7 @@ internal fun RecipeCardView(
                 if (time != null) BodyText(time, secondary = true)
                 if (tags.isNotEmpty()) BodyText(tags.take(3).joinToString(" • "), secondary = true)
             }
-            FavoriteControl(title, isFavorite, enabled && !pending, pending, onFavorite)
+            FavoriteControl(title, isFavorite, favoriteEnabled && !pending, pending, onFavorite)
         }
         if (onCooked != null) {
             Separator()
