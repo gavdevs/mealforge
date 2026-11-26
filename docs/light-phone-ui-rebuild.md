@@ -110,3 +110,19 @@ Re-ran forced native tests/lint/unsigned assembly after that correction:143 task
 Live resumed native session: `01a20b9e-6dc9-7385-9d33-bfdcadab0ca5`, exposed by `PI_SESSION_ID`.
 Transcript: `/home/gav/.hermes/profiles/forge/cache/scratch/omp-mealforge-light-phone/sessions/2026-11-24T03-34-21-897Z_01a20b9e-6dc9-7385-9d33-bfdcadab0ca5.jsonl`.
 
+## Compact plans controls
+
+The Plans filter is a persistent row of four equal-width pills (Active,
+Upcoming, Completed, Favorites). Each exposes a named tab and its selected
+state. Bottom navigation uses the existing 1.5-grid-unit Light icons with
+unchanged 48dp touch targets. Long active-plan and plan-card titles ellipsize
+on one line; their metadata is unchanged.
+
+On the 1080×1240 LP3 emulator, UIAutomator measured each label as one 41px
+line, with the widest label at 172px in a 225px pill. All four filters switched
+to the expected fixture results. All three bottom controls responded to taps
+outside their smaller glyphs but inside their 48dp targets. Screenshots and
+UIAutomator XML: `apps/light-phone/build/emulator/evidence/ui-pills/`.
+
+`:app:testDebugUnitTest --rerun-tasks` passed all 67 tests and
+`:app:assembleDebug` built the local versionCode 3 APK.

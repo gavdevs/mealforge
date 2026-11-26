@@ -223,6 +223,7 @@ private fun MainNavigation(onSelect: (MainSection) -> Unit) {
             },
             onClick = { onSelect(section) },
             contentDescription = section.name,
+            sizeUnits = 1.5f,
         )
     })
 }

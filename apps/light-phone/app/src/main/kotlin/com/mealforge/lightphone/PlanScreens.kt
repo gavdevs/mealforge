@@ -1,7 +1,9 @@
 package com.mealforge.lightphone
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,20 +12,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.thelightphone.sdk.SealedLightActivity
-import com.thelightphone.sdk.ui.LightIcon
-import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextField
 import com.thelightphone.sdk.ui.LightTextVariant
@@ -131,49 +129,19 @@ internal class PlansPanel(
         val selected by kind.collectAsState()
         val state by read.collectAsState()
         val activeState = activeContent?.state?.collectAsState()?.value
-        var filterMenuOpen by remember { mutableStateOf(false) }
-        Column(Modifier.fillMaxWidth()) {
-            Row(
-                Modifier.fillMaxWidth()
-                    .heightIn(min = 44.dp)
-                    .lightClickable(
-                        role = Role.Button,
-                        onClickLabel = if (filterMenuOpen) "Collapse plan filters" else "Expand plan filters",
-                    ) { filterMenuOpen = !filterMenuOpen }
-                    .clearAndSetSemantics { contentDescription = "Plan list: ${selected.title}" },
-                horizontalArrangement = Arrangement.spacedBy(0.5f.gridUnitsAsDp()),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LightText("SHOW", LightTextVariant.Detail, lighten = true, modifier = Modifier.weight(1f))
-                LightText(selected.title, LightTextVariant.Heading)
-                LightIcon(
-                    if (filterMenuOpen) LightIcons.UP else LightIcons.DOWN,
-                    contentDescription = null,
-                )
-            }
-            if (filterMenuOpen) PlanListKind.entries.forEach { option ->
-                val isSelected = selected == option
-                Row(
-                    Modifier.fillMaxWidth()
-                        .heightIn(min = 44.dp)
-                        .lightClickable(role = Role.Button) {
-                            filterMenuOpen = false
-                            if (kind.value != option) {
-                                hide()
-                                kind.value = option
-                                onFilter(option)
-                                read.value = PlanListRead()
-                                show()
-                            }
-                        }
-                        .clearAndSetSemantics {
-                            contentDescription = "Show ${option.title} plans"
-                            this.selected = isSelected
-                        },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    LightText(option.title, LightTextVariant.ParagraphWide, modifier = Modifier.weight(1f))
-                    if (isSelected) LightIcon(LightIcons.ACCEPT, contentDescription = null)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(0.5f.gridUnitsAsDp()),
+        ) {
+            PlanListKind.entries.forEach { option ->
+                PlanFilterPill(option.title, selected == option, Modifier.weight(1f)) {
+                    if (kind.value != option) {
+                        hide()
+                        kind.value = option
+                        onFilter(option)
+                        read.value = PlanListRead()
+                        show()
+                    }
                 }
             }
         }
@@ -211,10 +179,47 @@ internal class PlansPanel(
 }
 
 @Composable
+private fun PlanFilterPill(
+    label: String,
+    isSelected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = LightThemeTokens.colors
+    Box(
+        modifier
+            .heightIn(min = 44.dp)
+            .lightClickable(role = Role.Tab, onClick = onClick)
+            .semantics {
+                contentDescription = "Show plans: $label"
+                selected = isSelected
+            }
+            .border(1.dp, colors.contentSecondary)
+            .background(if (isSelected) colors.content else colors.background)
+            .padding(horizontal = 0.25f.gridUnitsAsDp(), vertical = 0.4f.gridUnitsAsDp()),
+        contentAlignment = Alignment.Center,
+    ) {
+        LightText(
+            label,
+            LightTextVariant.Detail,
+            align = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = if (isSelected) colors.background else null,
+        )
+    }
+}
+
+@Composable
 private fun PlanCardView(plan: ActivePlan, onOpen: () -> Unit) {
     Column(Modifier.fillMaxWidth().border(1.dp, LightThemeTokens.colors.contentSecondary)
         .lightClickable(onClick = onOpen).padding(0.75f.gridUnitsAsDp())) {
-        LightText(plan.displayName, LightTextVariant.ParagraphWide)
+        LightText(
+            plan.displayName,
+            LightTextVariant.ParagraphWide,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
         if (plan.isFavorite) BodyText("Favorite", true)
         val date = if (plan.status == "completed") plan.completedAt else plan.createdAt
         BodyText("${plan.meals.size} ${if (plan.meals.size == 1) "meal" else "meals"} • " +
@@ -340,7 +345,12 @@ internal class PlanContent(
         } else {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.5f.gridUnitsAsDp())) {
                 Column(Modifier.weight(1f)) {
-                    LightText(plan.displayName, LightTextVariant.Heading)
+                    LightText(
+                        plan.displayName,
+                        LightTextVariant.Subheading,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     val count = plan.meals.count { it.cookedAt != null }
                     BodyText("${plan.meals.size} ${if (plan.meals.size == 1) "meal" else "meals"}" +
                         (if (count > 0) " • $count cooked" else "") + " • " +
