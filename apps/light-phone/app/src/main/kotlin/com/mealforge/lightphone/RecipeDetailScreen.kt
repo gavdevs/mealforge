@@ -20,13 +20,11 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.ui.LightBarButton
 import com.thelightphone.sdk.ui.LightBottomBar
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
-import com.thelightphone.sdk.ui.LightTheme
 import com.thelightphone.sdk.ui.LightThemeTokens
 import com.thelightphone.sdk.ui.designVerticalPxToSp
 import com.thelightphone.sdk.ui.gridUnitsAsDp
@@ -169,18 +167,15 @@ private class CookScreen(activity: SealedLightActivity, private val recipe: Reci
             backLabel = "Exit", backAction = { session.exit(); goBack(Unit) },
             scrollKey = progress.index,
             bottom = {
-                val typography = LightThemeTokens.typography
-                LightTheme(typography = typography.copy(button = typography.button.copy(letterSpacing = 0.sp))) {
-                    LightBottomBar(items = listOf(
-                        LightBarButton.Text("Previous", enabled = progress.index > 0 && progress.visible && !progress.finished,
-                            onClick = { session.previous() }),
-                        LightBarButton.Text(if (progress.index == progress.steps.lastIndex) "Done, serve it" else "Next step",
-                            enabled = progress.visible && !progress.finished, onClick = {
-                                session.next()
-                                if (session.state.value.finished) goBack(Unit)
-                            }),
-                    ))
-                }
+                LightBottomBar(items = listOf(
+                    LightBarButton.Text("Previous", enabled = progress.index > 0 && progress.visible && !progress.finished,
+                        onClick = { session.previous() }),
+                    LightBarButton.Text(if (progress.index == progress.steps.lastIndex) "Done, serve it" else "Next step",
+                        enabled = progress.visible && !progress.finished, onClick = {
+                            session.next()
+                            if (session.state.value.finished) goBack(Unit)
+                        }),
+                ))
             }) {
             BodyText(recipe.title, true)
             Column(Modifier.fillMaxWidth().heightIn(min = 13f.gridUnitsAsDp()),

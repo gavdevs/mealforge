@@ -1,7 +1,6 @@
 package com.mealforge.lightphone
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -94,11 +93,19 @@ internal class RecipesPanel(
             ActionButton("Favorites", selected = selected.favorites, modifier = Modifier.weight(1f)) { choose(selected.copy(favorites = true)) }
             ActionButton("History", selected = !selected.favorites, modifier = Modifier.weight(1f)) { choose(selected.copy(favorites = false)) }
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(0.3f.gridUnitsAsDp()),
-            verticalArrangement = Arrangement.spacedBy(0.3f.gridUnitsAsDp())) {
-            ActionButton("All", selected = selected.mealType == null) { choose(selected.copy(mealType = null)) }
-            MEAL_LABELS.forEach { (key, label) ->
-                ActionButton(label, selected = selected.mealType == key) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.3f.gridUnitsAsDp())) {
+            ActionButton("All", selected = selected.mealType == null, modifier = Modifier.weight(1f)) {
+                choose(selected.copy(mealType = null))
+            }
+            MEAL_LABELS.entries.take(2).forEach { (key, label) ->
+                ActionButton(label, selected = selected.mealType == key, modifier = Modifier.weight(1f)) {
+                    choose(selected.copy(mealType = if (selected.mealType == key) null else key))
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.3f.gridUnitsAsDp())) {
+            MEAL_LABELS.entries.drop(2).forEach { (key, label) ->
+                ActionButton(label, selected = selected.mealType == key, modifier = Modifier.weight(1f)) {
                     choose(selected.copy(mealType = if (selected.mealType == key) null else key))
                 }
             }

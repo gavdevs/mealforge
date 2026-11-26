@@ -121,7 +121,7 @@ internal class PlansPanel(
         val selected by kind.collectAsState()
         val state by read.collectAsState()
         val activeState = activeContent?.state?.collectAsState()?.value
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.2f.gridUnitsAsDp())) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.5f.gridUnitsAsDp())) {
             PlanListKind.entries.forEach { option ->
                 ActionButton(option.title, selected = selected == option, modifier = Modifier.weight(1f)) {
                     if (kind.value != option) {

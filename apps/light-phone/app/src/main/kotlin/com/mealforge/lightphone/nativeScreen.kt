@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,7 +22,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
@@ -105,7 +103,7 @@ abstract class NativeScreen<R>(activity: SealedLightActivity) : SimpleLightScree
                 )
                 Separator()
                 LightScrollView(
-                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = 1f.gridUnitsAsDp()),
+                    Modifier.weight(1f).fillMaxWidth().padding(start = 1f.gridUnitsAsDp()),
                     scrollState = scroll,
                 ) {
                     Column(
@@ -114,7 +112,7 @@ abstract class NativeScreen<R>(activity: SealedLightActivity) : SimpleLightScree
                         content = content,
                     )
                 }
-                if (main != null && onMain != null) MainNavigation(main, onMain)
+                if (main != null && onMain != null) MainNavigation(onMain)
                 else bottom?.invoke()
             }
         }
@@ -122,21 +120,10 @@ abstract class NativeScreen<R>(activity: SealedLightActivity) : SimpleLightScree
 }
 
 @Composable
-private fun MainNavigation(selected: MainSection, onSelect: (MainSection) -> Unit) {
-    val colors = LightThemeTokens.colors
-    Row(Modifier.fillMaxWidth().padding(horizontal = 2f.gridUnitsAsDp())) {
-        MainSection.entries.forEach { section ->
-            Box(Modifier.weight(1f).height(2.dp)
-                .background(if (section == selected) colors.content else colors.contentSecondary))
-        }
-    }
-    // Keep the SDK bar's grid/height but avoid tracking clipping three text labels.
-    val typography = LightThemeTokens.typography
-    LightTheme(typography = typography.copy(button = typography.button.copy(letterSpacing = 0.sp))) {
-        LightBottomBar(items = MainSection.entries.map { section ->
-            LightBarButton.Text(section.name, onClick = { onSelect(section) })
-        })
-    }
+private fun MainNavigation(onSelect: (MainSection) -> Unit) {
+    LightBottomBar(items = MainSection.entries.map { section ->
+        LightBarButton.Text(section.name, onClick = { onSelect(section) })
+    })
 }
 
 @Composable

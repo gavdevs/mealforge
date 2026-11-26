@@ -325,6 +325,27 @@ const server = createServer(async (incoming: IncomingMessage, outgoing: ServerRe
       jsonResponse(outgoing, 200, { requests: requestLog });
       return;
     }
+    if (parsed.pathname === '/__fixture/longContent' && method === 'POST') {
+      const description =
+        'Long fixture description for readable wrapping on the Light Phone. '.repeat(12);
+      const steps = [
+        '# Before cooking',
+        'Keep **raw HTML** inert: <script>fixture only</script>.',
+        '',
+        '1. Gently fold the chopped herbs into the vegetables. '.repeat(8),
+        '2. Serve with _fresh lemon_ and `warm beans`.',
+      ].join('\n');
+      db.$client
+        .prepare('UPDATE recipes SET description = ?, steps_markdown = ? WHERE id = 1')
+        .run(description, steps);
+      db.$client
+        .prepare('UPDATE recipe_ingredients SET name = ? WHERE id = 1')
+        .run(
+          'Fresh lemon with an intentionally long ingredient description that must wrap without hiding the quantity',
+        );
+      jsonResponse(outgoing, 200, { ok: true, recipeId: 1 });
+      return;
+    }
 
     const procedure = parsed.pathname.startsWith('/trpc/')
       ? parsed.pathname.slice('/trpc/'.length)
@@ -381,6 +402,9 @@ server.on('error', (error) => {
   process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
   process.exit(1);
 });
+// UIAutomator dumps can leave Android's adb-reversed connection idle between
+// actions. Keep this disposable fixture alive across those slow interactions.
+server.keepAliveTimeout = 120_000;
 
 server.listen(0, '127.0.0.1', () => {
   const { port } = server.address() as AddressInfo;
