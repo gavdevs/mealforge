@@ -126,3 +126,13 @@ UIAutomator XML: `apps/light-phone/build/emulator/evidence/ui-pills/`.
 
 `:app:testDebugUnitTest --rerun-tasks` passed all 67 tests and
 `:app:assembleDebug` built the local versionCode 3 APK.
+
+## Full-width scrolling
+
+Native screens scroll without a scrollbar or trailing gutter. The one-grid-unit
+leading inset and wheel scrolling are unchanged.
+
+On the 1080×1240 LP3 emulator, the Plans “Complete this plan” row spans
+x=40–1080, reclaiming 80 px on the right compared with the installed versionCode 4
+baseline. A wheel step moved the content 150 px. Screenshots and UIAutomator
+measurements are in `apps/light-phone/build/emulator/evidence/ui-no-scrollbar/`.
