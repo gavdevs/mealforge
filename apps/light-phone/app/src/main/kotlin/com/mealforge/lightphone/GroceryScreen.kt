@@ -26,6 +26,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextField
+import com.thelightphone.sdk.ui.LightTextFieldUnderlineStyle
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.gridUnitsAsDp
 import com.thelightphone.sdk.ui.lightClickable
@@ -170,7 +171,9 @@ internal class GroceryPanel(
                     if (!current.adding) editText("Item name", values.name) {
                         draft.value = draft.value.copy(name = it, planId = plan.planId)
                     }
-                })
+                },
+                // Match the content column width; the SDK default stops at 80%.
+                underlineStyleOverrides = LightTextFieldUnderlineStyle(widthFraction = 1f))
             ActionButton("Section: ${STORE_SECTIONS[values.section] ?: values.section}", !current.adding) {
                 sectionOpen.value = !sectionOpen.value
             }

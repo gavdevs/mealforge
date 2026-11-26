@@ -2,16 +2,21 @@ package com.mealforge.lightphone
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.thelightphone.sdk.ui.LightIcon
+import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.LightThemeTokens
@@ -58,8 +63,17 @@ internal fun RecipeCardView(
 
 @Composable
 internal fun FavoriteControl(title: String, favorite: Boolean, enabled: Boolean, pending: Boolean = false, action: () -> Unit) {
-    ActionButton(if (pending) "..." else if (favorite) "★" else "☆", enabled,
-        modifier = Modifier.semantics {
+    Box(
+        Modifier.semantics {
             contentDescription = if (favorite) "Unfavorite $title" else "Favorite $title"
-        }, action = action)
+        }.lightClickable(enabled = enabled, role = Role.Button, onClick = action)
+            .heightIn(min = 44.dp),
+    ) {
+        if (pending) BodyText("...", true)
+        else LightIcon(
+            if (favorite) LightIcons.STAR else LightIcons.STAR_OUTLINE,
+            contentDescription = null,
+            modifier = Modifier.align(Alignment.Center),
+        )
+    }
 }
