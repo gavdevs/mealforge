@@ -5,15 +5,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.thelightphone.sdk.SealedLightActivity
+import com.thelightphone.sdk.ui.LightIcon
+import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextField
 import com.thelightphone.sdk.ui.LightTextVariant
@@ -121,16 +131,49 @@ internal class PlansPanel(
         val selected by kind.collectAsState()
         val state by read.collectAsState()
         val activeState = activeContent?.state?.collectAsState()?.value
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.5f.gridUnitsAsDp())) {
-            PlanListKind.entries.forEach { option ->
-                ActionButton(option.title, selected = selected == option, modifier = Modifier.weight(1f)) {
-                    if (kind.value != option) {
-                        hide()
-                        kind.value = option
-                        onFilter(option)
-                        read.value = PlanListRead()
-                        show()
-                    }
+        var filterMenuOpen by remember { mutableStateOf(false) }
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.fillMaxWidth()
+                    .heightIn(min = 44.dp)
+                    .lightClickable(
+                        role = Role.Button,
+                        onClickLabel = if (filterMenuOpen) "Collapse plan filters" else "Expand plan filters",
+                    ) { filterMenuOpen = !filterMenuOpen }
+                    .clearAndSetSemantics { contentDescription = "Plan list: ${selected.title}" },
+                horizontalArrangement = Arrangement.spacedBy(0.5f.gridUnitsAsDp()),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LightText("SHOW", LightTextVariant.Detail, lighten = true, modifier = Modifier.weight(1f))
+                LightText(selected.title, LightTextVariant.Heading)
+                LightIcon(
+                    if (filterMenuOpen) LightIcons.UP else LightIcons.DOWN,
+                    contentDescription = null,
+                )
+            }
+            if (filterMenuOpen) PlanListKind.entries.forEach { option ->
+                val isSelected = selected == option
+                Row(
+                    Modifier.fillMaxWidth()
+                        .heightIn(min = 44.dp)
+                        .lightClickable(role = Role.Button) {
+                            filterMenuOpen = false
+                            if (kind.value != option) {
+                                hide()
+                                kind.value = option
+                                onFilter(option)
+                                read.value = PlanListRead()
+                                show()
+                            }
+                        }
+                        .clearAndSetSemantics {
+                            contentDescription = "Show ${option.title} plans"
+                            this.selected = isSelected
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    LightText(option.title, LightTextVariant.ParagraphWide, modifier = Modifier.weight(1f))
+                    if (isSelected) LightIcon(LightIcons.ACCEPT, contentDescription = null)
                 }
             }
         }

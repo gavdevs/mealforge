@@ -42,6 +42,7 @@ import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
 import com.thelightphone.sdk.ui.LightBottomBar
+import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.LightTheme
@@ -214,7 +215,15 @@ private fun ThinScrollBar(
 @Composable
 private fun MainNavigation(onSelect: (MainSection) -> Unit) {
     LightBottomBar(items = MainSection.entries.map { section ->
-        LightBarButton.Text(section.name, onClick = { onSelect(section) })
+        LightBarButton.LightIcon(
+            icon = when (section) {
+                MainSection.Plans -> LightIcons.HOME
+                MainSection.Recipes -> LightIcons.LARGE_LIST
+                MainSection.Grocery -> LightIcons.ACCEPT
+            },
+            onClick = { onSelect(section) },
+            contentDescription = section.name,
+        )
     })
 }
 
