@@ -103,7 +103,13 @@ abstract class NativeScreen<R>(activity: SealedLightActivity) : SimpleLightScree
                     rightButton = right,
                 )
                 ScrollPane(
-                    Modifier.weight(1f).fillMaxWidth().padding(start = 1f.gridUnitsAsDp()),
+                    Modifier.weight(1f).fillMaxWidth().then(
+                        if (main == MainSection.Plans && backLabel.isEmpty()) {
+                            Modifier.padding(horizontal = 0.25f.gridUnitsAsDp())
+                        } else {
+                            Modifier.padding(start = 1f.gridUnitsAsDp())
+                        },
+                    ),
                     scrollState = scroll,
                 ) {
                     Column(
