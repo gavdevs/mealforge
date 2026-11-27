@@ -136,3 +136,11 @@ On the 1080×1240 LP3 emulator, the Plans “Complete this plan” row spans
 x=40–1080, reclaiming 80 px on the right compared with the installed versionCode 4
 baseline. A wheel step moved the content 150 px. Screenshots and UIAutomator
 measurements are in `apps/light-phone/build/emulator/evidence/ui-no-scrollbar/`.
+
+## Symmetric main-tab gutters
+
+Plans, Recipes, and Grocery inset scroll content 10 px on both sides on the
+1080×1240 LP3 emulator. UIAutomator measured full-width rows at x=10–1070
+on all three tabs. Recipe detail, plan detail, and cook mode retain the
+one-grid-unit (40 px) leading inset. Screenshots and XML are in
+`apps/light-phone/build/emulator/evidence/ui-main-tabs-gutters/`.
